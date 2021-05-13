@@ -92,12 +92,12 @@ BOOST_FIXTURE_TEST_SUITE(net_tests, BasicTestingSetup)
 BOOST_AUTO_TEST_CASE(cnode_listen_port)
 {
     // test default
-    uint16_t port{GetListenPort()};
-    BOOST_CHECK(port == Params().GetDefaultPort());
+    uint16_t port{m_args.GetListenPort()};
+    BOOST_CHECK(port == BaseParams().GetDefaultPort());
     // test set port
     uint16_t altPort = 12345;
-    BOOST_CHECK(gArgs.SoftSetArg("-port", ToString(altPort)));
-    port = GetListenPort();
+    BOOST_CHECK(m_args.SoftSetArg("-port", ToString(altPort)));
+    port = m_args.GetListenPort();
     BOOST_CHECK(port == altPort);
 }
 
@@ -773,7 +773,7 @@ BOOST_AUTO_TEST_CASE(ipv4_peer_with_ipv6_addrMe_test)
     pnode->SetAddrLocal(addrLocal);
 
     // before patch, this causes undefined behavior detectable with clang's -fsanitize=memory
-    GetLocalAddrForPeer(&*pnode);
+    GetLocalAddrForPeer(&*pnode, m_args);
 
     // suppress no-checks-run warning; if this test fails, it's by triggering a sanitizer
     BOOST_CHECK(1);

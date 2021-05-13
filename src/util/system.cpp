@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "chainparams.h"
 #include <util/system.h>
 
 #ifdef ENABLE_EXTERNAL_SIGNER
@@ -658,6 +659,12 @@ void ArgsManager::AddHiddenArgs(const std::vector<std::string>& names)
         AddArg(name, "", ArgsManager::ALLOW_ANY, OptionsCategory::HIDDEN);
     }
 }
+
+uint16_t ArgsManager::GetListenPort() const
+{
+    return static_cast<uint16_t>(GetArg("-port", BaseParams().GetDefaultPort()));
+}
+
 
 std::string ArgsManager::GetHelpMessage() const
 {

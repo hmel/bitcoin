@@ -6,6 +6,7 @@
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
+#include "util/system.h"
 #include <addrdb.h>
 #include <addrman.h>
 #include <amount.h>
@@ -185,7 +186,6 @@ enum class ConnectionType {
 /** Convert ConnectionType enum to a string value */
 std::string ConnectionTypeAsString(ConnectionType conn_type);
 void Discover();
-uint16_t GetListenPort();
 
 enum
 {
@@ -200,7 +200,7 @@ enum
 
 bool IsPeerAddrLocalGood(CNode *pnode);
 /** Returns a local address that we should advertise to this peer */
-std::optional<CAddress> GetLocalAddrForPeer(CNode *pnode);
+std::optional<CAddress> GetLocalAddrForPeer(CNode* pnode, const ArgsManager& args);
 
 /**
  * Mark a network as reachable or unreachable (no automatic connects to it)
@@ -218,7 +218,7 @@ void RemoveLocal(const CService& addr);
 bool SeenLocal(const CService& addr);
 bool IsLocal(const CService& addr);
 bool GetLocal(CService &addr, const CNetAddr *paddrPeer = nullptr);
-CAddress GetLocalAddress(const CNetAddr *paddrPeer, ServiceFlags nLocalServices);
+CAddress GetLocalAddress(const CNetAddr* paddrPeer, ServiceFlags nLocalServices, const ArgsManager& args);
 
 
 extern bool fDiscover;
@@ -858,7 +858,7 @@ public:
         m_onion_binds = connOptions.onion_binds;
     }
 
-    CConnman(uint64_t seed0, uint64_t seed1, CAddrMan& addrman, bool network_active = true);
+    CConnman(uint64_t seed0, uint64_t seed1, CAddrMan& addrman, const ArgsManager& args, bool network_active = true);
     ~CConnman();
     bool Start(CScheduler& scheduler, const Options& options);
 
@@ -1020,6 +1020,8 @@ public:
 
     /** Return true if we should disconnect the peer for failing an inactivity check. */
     bool ShouldRunInactivityChecks(const CNode& node, std::optional<int64_t> now=std::nullopt) const;
+
+    const ArgsManager& GetArgs() const { return args; }
 
 private:
     struct ListenSocket {
@@ -1209,6 +1211,8 @@ private:
 
     /** SipHasher seeds for deterministic randomness */
     const uint64_t nSeed0, nSeed1;
+
+    const ArgsManager& args;
 
     /** flag for waking the message processor. */
     bool fMsgProcWake GUARDED_BY(mutexMsgProc);

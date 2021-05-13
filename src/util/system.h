@@ -388,6 +388,11 @@ public:
     }
 
     /**
+     * Return the port number to listen on
+     */
+    uint16_t GetListenPort() const;
+
+    /**
      * Get the help string
      */
     std::string GetHelpMessage() const;

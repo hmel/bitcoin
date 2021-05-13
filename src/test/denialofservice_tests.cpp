@@ -48,7 +48,7 @@ static CService ip(uint32_t i)
 {
     struct in_addr s;
     s.s_addr = i;
-    return CService(CNetAddr(s), Params().GetDefaultPort());
+    return CService(CNetAddr(s), BaseParams().GetDefaultPort());
 }
 
 static NodeId id = 0;
@@ -68,7 +68,7 @@ BOOST_FIXTURE_TEST_SUITE(denialofservice_tests, TestingSetup)
 BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
 {
     const CChainParams& chainparams = Params();
-    auto connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman);
+    auto connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman, m_args);
     auto peerLogic = PeerManager::make(chainparams, *connman, *m_node.addrman, nullptr,
                                        *m_node.scheduler, *m_node.chainman, *m_node.mempool, false);
 
@@ -136,7 +136,7 @@ static void AddRandomOutboundPeer(std::vector<CNode *> &vNodes, PeerManager &pee
 BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
 {
     const CChainParams& chainparams = Params();
-    auto connman = std::make_unique<CConnmanTest>(0x1337, 0x1337, *m_node.addrman);
+    auto connman = std::make_unique<CConnmanTest>(0x1337, 0x1337, *m_node.addrman, m_args);
     auto peerLogic = PeerManager::make(chainparams, *connman, *m_node.addrman, nullptr,
                                        *m_node.scheduler, *m_node.chainman, *m_node.mempool, false);
 
@@ -209,14 +209,14 @@ BOOST_AUTO_TEST_CASE(peer_discouragement)
 {
     const CChainParams& chainparams = Params();
     auto banman = std::make_unique<BanMan>(m_args.GetDataDirPath() / "banlist.dat", nullptr, DEFAULT_MISBEHAVING_BANTIME);
-    auto connman = std::make_unique<CConnmanTest>(0x1337, 0x1337, *m_node.addrman);
+    auto connman = std::make_unique<CConnmanTest>(0x1337, 0x1337, *m_node.addrman, m_args);
     auto peerLogic = PeerManager::make(chainparams, *connman, *m_node.addrman, banman.get(),
                                        *m_node.scheduler, *m_node.chainman, *m_node.mempool, false);
 
     CNetAddr tor_netaddr;
     BOOST_REQUIRE(
         tor_netaddr.SetSpecial("pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscryd.onion"));
-    const CService tor_service{tor_netaddr, Params().GetDefaultPort()};
+    const CService tor_service{tor_netaddr, BaseParams().GetDefaultPort()};
 
     const std::array<CAddress, 3> addr{CAddress{ip(0xa0b0c001), NODE_NONE},
                                        CAddress{ip(0xa0b0c002), NODE_NONE},
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(DoS_bantime)
 {
     const CChainParams& chainparams = Params();
     auto banman = std::make_unique<BanMan>(m_args.GetDataDirPath() / "banlist.dat", nullptr, DEFAULT_MISBEHAVING_BANTIME);
-    auto connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman);
+    auto connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman, m_args);
     auto peerLogic = PeerManager::make(chainparams, *connman, *m_node.addrman, banman.get(),
                                        *m_node.scheduler, *m_node.chainman, *m_node.mempool, false);
 

@@ -2476,7 +2476,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             // information about our block-relay-only connections via address relay.
             if (fListen && !m_chainman.ActiveChainstate().IsInitialBlockDownload())
             {
-                CAddress addr = GetLocalAddress(&pfrom.addr, pfrom.GetLocalServices());
+                CAddress addr = GetLocalAddress(&pfrom.addr, pfrom.GetLocalServices(), m_connman.GetArgs());
                 FastRandomContext insecure_rand;
                 if (addr.IsRoutable())
                 {
@@ -4170,7 +4170,7 @@ void PeerManagerImpl::MaybeSendAddr(CNode& node, std::chrono::microseconds curre
         if (node.m_next_local_addr_send != 0us) {
             node.m_addr_known->reset();
         }
-        if (std::optional<CAddress> local_addr = GetLocalAddrForPeer(&node)) {
+        if (std::optional<CAddress> local_addr = GetLocalAddrForPeer(&node, m_connman.GetArgs())) {
             FastRandomContext insecure_rand;
             node.PushAddress(*local_addr, insecure_rand);
         }
