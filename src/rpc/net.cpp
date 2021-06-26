@@ -28,6 +28,8 @@
 #include <version.h>
 #include <warnings.h>
 
+#include <optional>
+
 #include <univalue.h>
 
 const std::vector<std::string> CONNECTION_TYPE_DOC{
@@ -159,7 +161,7 @@ static RPCHelpMan getpeerinfo()
                                                               "When a message type is not listed in this json object, the bytes sent are 0.\n"
                                                               "Only known message types can appear as keys in the object."}
                             }},
-                            {RPCResult::Type::OBJ, "bytesrecv_per_msg", "",
+                            {RPCResult::Type::OBJ_DYN, "bytesrecv_per_msg", "",
                             {
                                 {RPCResult::Type::NUM, "msg", "The total bytes received aggregated by message type\n"
                                                               "When a message type is not listed in this json object, the bytes received are 0.\n"
@@ -851,6 +853,7 @@ static RPCHelpMan getnodeaddresses()
                 "\nReturn known addresses, which can potentially be used to find new nodes in the network.\n",
                 {
                     {"count", RPCArg::Type::NUM, RPCArg::Default{1}, "The maximum number of addresses to return. Specify 0 to return all known addresses."},
+                    {"network", RPCArg::Type::STR, RPCArg::DefaultHint{"all networks"}, "Return only addresses of the specified network. Can be one of: " + Join(GetNetworkNames(), ", ") + "."},
                 },
                 RPCResult{
                     RPCResult::Type::ARR, "", "",
@@ -867,7 +870,10 @@ static RPCHelpMan getnodeaddresses()
                 },
                 RPCExamples{
                     HelpExampleCli("getnodeaddresses", "8")
-            + HelpExampleRpc("getnodeaddresses", "8")
+                    + HelpExampleCli("getnodeaddresses", "4 \"i2p\"")
+                    + HelpExampleCli("-named getnodeaddresses", "network=onion count=12")
+                    + HelpExampleRpc("getnodeaddresses", "8")
+                    + HelpExampleRpc("getnodeaddresses", "4, \"i2p\"")
                 },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
@@ -877,8 +883,13 @@ static RPCHelpMan getnodeaddresses()
     const int count{request.params[0].isNull() ? 1 : request.params[0].get_int()};
     if (count < 0) throw JSONRPCError(RPC_INVALID_PARAMETER, "Address count out of range");
 
+    const std::optional<Network> network{request.params[1].isNull() ? std::nullopt : std::optional<Network>{ParseNetwork(request.params[1].get_str())}};
+    if (network == NET_UNROUTABLE) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Network not recognized: %s", request.params[1].get_str()));
+    }
+
     // returns a shuffled list of CAddress
-    const std::vector<CAddress> vAddr{connman.GetAddresses(count, /* max_pct */ 0)};
+    const std::vector<CAddress> vAddr{connman.GetAddresses(count, /* max_pct */ 0, network)};
     UniValue ret(UniValue::VARR);
 
     for (const CAddress& addr : vAddr) {
@@ -920,26 +931,22 @@ static RPCHelpMan addpeeraddress()
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Address manager functionality missing or disabled");
     }
 
+    const std::string& addr_string{request.params[0].get_str()};
+    const uint16_t port{static_cast<uint16_t>(request.params[1].get_int())};
+
     UniValue obj(UniValue::VOBJ);
-
-    std::string addr_string = request.params[0].get_str();
-    uint16_t port{static_cast<uint16_t>(request.params[1].get_int())};
-
     CNetAddr net_addr;
-    if (!LookupHost(addr_string, net_addr, false)) {
-        obj.pushKV("success", false);
-        return obj;
-    }
-    CAddress address = CAddress({net_addr, port}, ServiceFlags(NODE_NETWORK|NODE_WITNESS));
-    address.nTime = GetAdjustedTime();
-    // The source address is set equal to the address. This is equivalent to the peer
-    // announcing itself.
-    if (!node.addrman->Add(address, address)) {
-        obj.pushKV("success", false);
-        return obj;
+    bool success{false};
+
+    if (LookupHost(addr_string, net_addr, false)) {
+        CAddress address{{net_addr, port}, ServiceFlags{NODE_NETWORK | NODE_WITNESS}};
+        address.nTime = GetAdjustedTime();
+        // The source address is set equal to the address. This is equivalent to the peer
+        // announcing itself.
+        if (node.addrman->Add(address, address)) success = true;
     }
 
-    obj.pushKV("success", true);
+    obj.pushKV("success", success);
     return obj;
 },
     };

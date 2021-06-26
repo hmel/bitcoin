@@ -73,7 +73,7 @@ WalletView::WalletView(const PlatformStyle *_platformStyle, QWidget *parent):
     // Clicking on a transaction on the overview pre-selects the transaction on the transaction history page
     connect(overviewPage, &OverviewPage::transactionClicked, transactionView, qOverload<const QModelIndex&>(&TransactionView::focusTransaction));
 
-    connect(overviewPage, &OverviewPage::outOfSyncWarningClicked, this, &WalletView::requestedSyncWarningInfo);
+    connect(overviewPage, &OverviewPage::outOfSyncWarningClicked, this, &WalletView::outOfSyncWarningClicked);
 
     connect(sendCoinsPage, &SendCoinsDialog::coinsSent, this, &WalletView::coinsSent);
     // Highlight transaction after send
@@ -273,7 +273,8 @@ void WalletView::backupWallet()
 {
     QString filename = GUIUtil::getSaveFileName(this,
         tr("Backup Wallet"), QString(),
-        tr("Wallet Data", "Name of wallet data file format") + QLatin1String(" (*.dat)"), nullptr);
+        //: Name of the wallet data file format.
+        tr("Wallet Data") + QLatin1String(" (*.dat)"), nullptr);
 
     if (filename.isEmpty())
         return;
@@ -330,7 +331,6 @@ void WalletView::showProgress(const QString &title, int nProgress)
         progressDialog = new QProgressDialog(title, tr("Cancel"), 0, 100);
         GUIUtil::PolishProgressDialog(progressDialog);
         progressDialog->setWindowModality(Qt::ApplicationModal);
-        progressDialog->setMinimumDuration(0);
         progressDialog->setAutoClose(false);
         progressDialog->setValue(0);
     } else if (nProgress == 100) {
@@ -346,9 +346,4 @@ void WalletView::showProgress(const QString &title, int nProgress)
             progressDialog->setValue(nProgress);
         }
     }
-}
-
-void WalletView::requestedSyncWarningInfo()
-{
-    Q_EMIT outOfSyncWarningClicked();
 }

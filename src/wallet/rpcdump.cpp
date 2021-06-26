@@ -286,6 +286,9 @@ RPCHelpMan importaddress()
             if (fP2SH) {
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Cannot use the p2sh flag with an address - use a script instead");
             }
+            if (OutputTypeFromDestination(dest) == OutputType::BECH32M) {
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Bech32m addresses cannot be imported into legacy wallets");
+            }
 
             pwallet->MarkDirty();
 
@@ -962,6 +965,9 @@ static UniValue ProcessImportLegacy(ImportData& import_data, std::map<CKeyID, CP
         if (!IsValidDestination(dest)) {
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid address \"" + output + "\"");
         }
+        if (OutputTypeFromDestination(dest) == OutputType::BECH32M) {
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Bech32m addresses cannot be imported into legacy wallets");
+        }
         script = GetScriptForDestination(dest);
     } else {
         if (!IsHex(output)) {
@@ -1085,6 +1091,9 @@ static UniValue ProcessImportDescriptor(ImportData& import_data, std::map<CKeyID
     auto parsed_desc = Parse(descriptor, keys, error, /* require_checksum = */ true);
     if (!parsed_desc) {
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, error);
+    }
+    if (parsed_desc->GetOutputType() == OutputType::BECH32M) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Bech32m descriptors cannot be imported into legacy wallets");
     }
 
     have_solving_data = parsed_desc->IsSolvable();
@@ -1527,6 +1536,18 @@ static UniValue ProcessDescriptorImport(CWallet& wallet, const UniValue& data, c
             if (!expand_keys.GetKey(key_id, key)) {
                 have_all_privkeys = false;
                 break;
+            }
+        }
+
+        // Taproot descriptors cannot be imported if Taproot is not yet active.
+        // Check if this is a Taproot descriptor
+        CTxDestination dest;
+        ExtractDestination(scripts[0], dest);
+        if (std::holds_alternative<WitnessV1Taproot>(dest)) {
+            // Check if Taproot is active
+            if (!wallet.chain().isTaprootActive()) {
+                // Taproot is not active, raise an error
+                throw JSONRPCError(RPC_WALLET_ERROR, "Cannot import tr() descriptor when Taproot is not active");
             }
         }
 

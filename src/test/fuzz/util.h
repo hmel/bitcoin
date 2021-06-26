@@ -44,7 +44,7 @@ void CallOneOf(FuzzedDataProvider& fuzzed_data_provider, Callables... callables)
     const size_t call_index{fuzzed_data_provider.ConsumeIntegralInRange<size_t>(0, call_size - 1)};
 
     size_t i{0};
-    return ((i++ == call_index ? callables() : void()), ...);
+    ((i++ == call_index ? callables() : void()), ...);
 }
 
 template <typename Collection>
@@ -123,10 +123,7 @@ template <typename WeakEnumType, size_t size>
     return static_cast<opcodetype>(fuzzed_data_provider.ConsumeIntegralInRange<uint32_t>(0, MAX_OPCODE));
 }
 
-[[nodiscard]] inline CAmount ConsumeMoney(FuzzedDataProvider& fuzzed_data_provider) noexcept
-{
-    return fuzzed_data_provider.ConsumeIntegralInRange<CAmount>(0, MAX_MONEY);
-}
+[[nodiscard]] CAmount ConsumeMoney(FuzzedDataProvider& fuzzed_data_provider, const std::optional<CAmount>& max = std::nullopt) noexcept;
 
 [[nodiscard]] int64_t ConsumeTime(FuzzedDataProvider& fuzzed_data_provider, const std::optional<int64_t>& min = std::nullopt, const std::optional<int64_t>& max = std::nullopt) noexcept;
 
@@ -387,7 +384,7 @@ public:
             [&] {
                 mode = "a+";
             });
-#ifdef _GNU_SOURCE
+#if defined _GNU_SOURCE && !defined __ANDROID__
         const cookie_io_functions_t io_hooks = {
             FuzzedFileProvider::read,
             FuzzedFileProvider::write,
@@ -516,8 +513,6 @@ void WriteToStream(FuzzedDataProvider& fuzzed_data_provider, Stream& stream) noe
                 WRITE_TO_STREAM_CASE(uint32_t, fuzzed_data_provider.ConsumeIntegral<uint32_t>()),
                 WRITE_TO_STREAM_CASE(int64_t, fuzzed_data_provider.ConsumeIntegral<int64_t>()),
                 WRITE_TO_STREAM_CASE(uint64_t, fuzzed_data_provider.ConsumeIntegral<uint64_t>()),
-                WRITE_TO_STREAM_CASE(float, fuzzed_data_provider.ConsumeFloatingPoint<float>()),
-                WRITE_TO_STREAM_CASE(double, fuzzed_data_provider.ConsumeFloatingPoint<double>()),
                 WRITE_TO_STREAM_CASE(std::string, fuzzed_data_provider.ConsumeRandomLengthString(32)),
                 WRITE_TO_STREAM_CASE(std::vector<char>, ConsumeRandomLengthIntegralVector<char>(fuzzed_data_provider)));
         } catch (const std::ios_base::failure&) {
@@ -548,8 +543,6 @@ void ReadFromStream(FuzzedDataProvider& fuzzed_data_provider, Stream& stream) no
                 READ_FROM_STREAM_CASE(uint32_t),
                 READ_FROM_STREAM_CASE(int64_t),
                 READ_FROM_STREAM_CASE(uint64_t),
-                READ_FROM_STREAM_CASE(float),
-                READ_FROM_STREAM_CASE(double),
                 READ_FROM_STREAM_CASE(std::string),
                 READ_FROM_STREAM_CASE(std::vector<char>));
         } catch (const std::ios_base::failure&) {

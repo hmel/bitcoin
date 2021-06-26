@@ -21,8 +21,9 @@ std::vector<COutPoint> g_outpoints_coinbase_init_mature;
 std::vector<COutPoint> g_outpoints_coinbase_init_immature;
 
 struct MockedTxPool : public CTxMemPool {
-    void RollingFeeUpdate()
+    void RollingFeeUpdate() EXCLUSIVE_LOCKS_REQUIRED(!cs)
     {
+        LOCK(cs);
         lastRollingFeeUpdate = GetTime();
         blockSinceLastRollingFeeBump = true;
     }
@@ -84,7 +85,7 @@ void Finish(FuzzedDataProvider& fuzzed_data_provider, MockedTxPool& tx_pool, CCh
     {
         BlockAssembler::Options options;
         options.nBlockMaxWeight = fuzzed_data_provider.ConsumeIntegralInRange(0U, MAX_BLOCK_WEIGHT);
-        options.blockMinFeeRate = CFeeRate{ConsumeMoney(fuzzed_data_provider)};
+        options.blockMinFeeRate = CFeeRate{ConsumeMoney(fuzzed_data_provider, /* max */ COIN)};
         auto assembler = BlockAssembler{chainstate, *static_cast<CTxMemPool*>(&tx_pool), ::Params(), options};
         auto block_template = assembler.CreateNewBlock(CScript{} << OP_TRUE);
         Assert(block_template->block.vtx.size() >= 1);
@@ -218,6 +219,16 @@ FUZZ_TARGET_INIT(tx_pool_standard, initialize_tx_pool)
         RegisterSharedValidationInterface(txr);
         const bool bypass_limits = fuzzed_data_provider.ConsumeBool();
         ::fRequireStandard = fuzzed_data_provider.ConsumeBool();
+
+        // Make sure ProcessNewPackage on one transaction works and always fully validates the transaction.
+        // The result is not guaranteed to be the same as what is returned by ATMP.
+        const auto result_package = WITH_LOCK(::cs_main,
+                                    return ProcessNewPackage(node.chainman->ActiveChainstate(), tx_pool, {tx}, true));
+        auto it = result_package.m_tx_results.find(tx->GetWitnessHash());
+        Assert(it != result_package.m_tx_results.end());
+        Assert(it->second.m_result_type == MempoolAcceptResult::ResultType::VALID ||
+               it->second.m_result_type == MempoolAcceptResult::ResultType::INVALID);
+
         const auto res = WITH_LOCK(::cs_main, return AcceptToMemoryPool(chainstate, tx_pool, tx, bypass_limits));
         const bool accepted = res.m_result_type == MempoolAcceptResult::ResultType::VALID;
         SyncWithValidationInterfaceQueue();

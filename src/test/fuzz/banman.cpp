@@ -9,8 +9,10 @@
 #include <test/fuzz/fuzz.h>
 #include <test/fuzz/util.h>
 #include <test/util/setup_common.h>
+#include <util/readwritefile.h>
 #include <util/system.h>
 
+#include <cassert>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -32,13 +34,29 @@ void initialize_banman()
 
 FUZZ_TARGET_INIT(banman, initialize_banman)
 {
+    // The complexity is O(N^2), where N is the input size, because each call
+    // might call DumpBanlist (or other methods that are at least linear
+    // complexity of the input size).
+    int limit_max_ops{300};
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
     SetMockTime(ConsumeTime(fuzzed_data_provider));
-    const fs::path banlist_file = GetDataDir() / "fuzzed_banlist.dat";
-    fs::remove(banlist_file);
+    fs::path banlist_file = gArgs.GetDataDirNet() / "fuzzed_banlist";
+
+    const bool start_with_corrupted_banlist{fuzzed_data_provider.ConsumeBool()};
+    if (start_with_corrupted_banlist) {
+        const std::string sfx{fuzzed_data_provider.ConsumeBool() ? ".dat" : ".json"};
+        assert(WriteBinaryFile(banlist_file.string() + sfx,
+                               fuzzed_data_provider.ConsumeRandomLengthString()));
+    } else {
+        const bool force_read_and_write_to_err{fuzzed_data_provider.ConsumeBool()};
+        if (force_read_and_write_to_err) {
+            banlist_file = fs::path{"path"} / "to" / "inaccessible" / "fuzzed_banlist";
+        }
+    }
+
     {
         BanMan ban_man{banlist_file, nullptr, ConsumeBanTimeOffset(fuzzed_data_provider)};
-        while (fuzzed_data_provider.ConsumeBool()) {
+        while (--limit_max_ops >= 0 && fuzzed_data_provider.ConsumeBool()) {
             CallOneOf(
                 fuzzed_data_provider,
                 [&] {
@@ -52,7 +70,6 @@ FUZZ_TARGET_INIT(banman, initialize_banman)
                 [&] {
                     ban_man.ClearBanned();
                 },
-                [] {},
                 [&] {
                     ban_man.IsBanned(ConsumeNetAddr(fuzzed_data_provider));
                 },
@@ -72,11 +89,11 @@ FUZZ_TARGET_INIT(banman, initialize_banman)
                 [&] {
                     ban_man.DumpBanlist();
                 },
-                [] {},
                 [&] {
                     ban_man.Discourage(ConsumeNetAddr(fuzzed_data_provider));
                 });
         }
     }
-    fs::remove(banlist_file);
+    fs::remove(banlist_file.string() + ".dat");
+    fs::remove(banlist_file.string() + ".json");
 }
