@@ -31,7 +31,7 @@ static CService ip(uint32_t i)
 {
     struct in_addr s;
     s.s_addr = i;
-    return CService(CNetAddr(s), Params().GetDefaultPort());
+    return CService(CNetAddr(s), BaseParams().GetDefaultPort());
 }
 
 static NodeId id = 0;
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
 
     int64_t nStartTime = GetTime();
     // Wait 21 minutes
-    SetMockTime(nStartTime+21*60);
+    SetMockTime(nStartTime + 21 * 60);
     {
         LOCK(dummyNode1.cs_sendProcessing);
         BOOST_CHECK(peerLogic->SendMessages(&dummyNode1)); // should result in getheaders
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(outbound_slow_chain_eviction)
         BOOST_CHECK(dummyNode1.vSendMsg.size() > 0);
     }
     // Wait 3 more minutes
-    SetMockTime(nStartTime+24*60);
+    SetMockTime(nStartTime + 24 * 60);
     {
         LOCK(dummyNode1.cs_sendProcessing);
         BOOST_CHECK(peerLogic->SendMessages(&dummyNode1)); // should result in disconnect
@@ -107,7 +107,7 @@ static void AddRandomOutboundPeer(std::vector<CNode*>& vNodes, PeerManager& peer
 {
     CAddress addr(ip(g_insecure_rand_ctx.randbits(32)), NODE_NONE);
     vNodes.emplace_back(new CNode(id++, ServiceFlags(NODE_NETWORK | NODE_WITNESS), INVALID_SOCKET, addr, /* nKeyedNetGroupIn */ 0, /* nLocalHostNonceIn */ 0, CAddress(), /* pszDest */ "", ConnectionType::OUTBOUND_FULL_RELAY, /* inbound_onion */ false));
-    CNode &node = *vNodes.back();
+    CNode& node = *vNodes.back();
     node.SetCommonVersion(PROTOCOL_VERSION);
 
     peerLogic.InitializeNode(&node);
@@ -119,7 +119,7 @@ static void AddRandomOutboundPeer(std::vector<CNode*>& vNodes, PeerManager& peer
 BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
 {
     const CChainParams& chainparams = Params();
-    auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman);
+    auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, m_args);
     auto peerLogic = PeerManager::make(chainparams, *connman, *m_node.addrman, nullptr,
                                        *m_node.scheduler, *m_node.chainman, *m_node.mempool, false);
 
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     options.nMaxFeeler = MAX_FEELER_CONNECTIONS;
 
     connman->Init(options);
-    std::vector<CNode *> vNodes;
+    std::vector<CNode*> vNodes;
 
     // Mock some outbound peers
     for (int i = 0; i < max_outbound_full_relay; ++i) {
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     peerLogic->CheckForStaleTipAndEvictPeers();
 
     // No nodes should be marked for disconnection while we have no extra peers
-    for (const CNode *node : vNodes) {
+    for (const CNode* node : vNodes) {
         BOOST_CHECK(node->fDisconnect == false);
     }
 
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     BOOST_CHECK(connman->GetTryNewOutboundPeer());
 
     // Still no peers should be marked for disconnection
-    for (const CNode *node : vNodes) {
+    for (const CNode* node : vNodes) {
         BOOST_CHECK(node->fDisconnect == false);
     }
 
@@ -178,10 +178,10 @@ BOOST_AUTO_TEST_CASE(stale_tip_peer_management)
     for (int i = 0; i < max_outbound_full_relay - 1; ++i) {
         BOOST_CHECK(vNodes[i]->fDisconnect == false);
     }
-    BOOST_CHECK(vNodes[max_outbound_full_relay-1]->fDisconnect == true);
+    BOOST_CHECK(vNodes[max_outbound_full_relay - 1]->fDisconnect == true);
     BOOST_CHECK(vNodes.back()->fDisconnect == false);
 
-    for (const CNode *node : vNodes) {
+    for (const CNode* node : vNodes) {
         peerLogic->FinalizeNode(*node);
     }
 
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE(peer_discouragement)
 {
     const CChainParams& chainparams = Params();
     auto banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
-    auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman);
+    auto connman = std::make_unique<ConnmanTestMsg>(0x1337, 0x1337, *m_node.addrman, m_args);
     auto peerLogic = PeerManager::make(chainparams, *connman, *m_node.addrman, banman.get(),
                                        *m_node.scheduler, *m_node.chainman, *m_node.mempool, false);
 
@@ -286,7 +286,7 @@ BOOST_AUTO_TEST_CASE(DoS_bantime)
 {
     const CChainParams& chainparams = Params();
     auto banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
-    auto connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman);
+    auto connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman, m_args);
     auto peerLogic = PeerManager::make(chainparams, *connman, *m_node.addrman, banman.get(),
                                        *m_node.scheduler, *m_node.chainman, *m_node.mempool, false);
 
@@ -355,23 +355,21 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     LOCK(g_cs_orphans);
 
     // 50 orphan transactions:
-    for (int i = 0; i < 50; i++)
-    {
+    for (int i = 0; i < 50; i++) {
         CMutableTransaction tx;
         tx.vin.resize(1);
         tx.vin[0].prevout.n = 0;
         tx.vin[0].prevout.hash = InsecureRand256();
         tx.vin[0].scriptSig << OP_1;
         tx.vout.resize(1);
-        tx.vout[0].nValue = 1*CENT;
+        tx.vout[0].nValue = 1 * CENT;
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
 
         orphanage.AddTx(MakeTransactionRef(tx), i);
     }
 
     // ... and 50 that depend on other orphans:
-    for (int i = 0; i < 50; i++)
-    {
+    for (int i = 0; i < 50; i++) {
         CTransactionRef txPrev = orphanage.RandomOrphan();
 
         CMutableTransaction tx;
@@ -379,7 +377,7 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
         tx.vin[0].prevout.n = 0;
         tx.vin[0].prevout.hash = txPrev->GetHash();
         tx.vout.resize(1);
-        tx.vout[0].nValue = 1*CENT;
+        tx.vout[0].nValue = 1 * CENT;
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
         BOOST_CHECK(SignSignature(keystore, *txPrev, tx, 0, SIGHASH_ALL));
 
@@ -387,17 +385,15 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     }
 
     // This really-big orphan should be ignored:
-    for (int i = 0; i < 10; i++)
-    {
+    for (int i = 0; i < 10; i++) {
         CTransactionRef txPrev = orphanage.RandomOrphan();
 
         CMutableTransaction tx;
         tx.vout.resize(1);
-        tx.vout[0].nValue = 1*CENT;
+        tx.vout[0].nValue = 1 * CENT;
         tx.vout[0].scriptPubKey = GetScriptForDestination(PKHash(key.GetPubKey()));
         tx.vin.resize(2777);
-        for (unsigned int j = 0; j < tx.vin.size(); j++)
-        {
+        for (unsigned int j = 0; j < tx.vin.size(); j++) {
             tx.vin[j].prevout.n = j;
             tx.vin[j].prevout.hash = txPrev->GetHash();
         }
@@ -411,8 +407,7 @@ BOOST_AUTO_TEST_CASE(DoS_mapOrphans)
     }
 
     // Test EraseOrphansFor:
-    for (NodeId i = 0; i < 3; i++)
-    {
+    for (NodeId i = 0; i < 3; i++) {
         size_t sizeBefore = orphanage.CountOrphans();
         orphanage.EraseForPeer(i);
         BOOST_CHECK(orphanage.CountOrphans() < sizeBefore);
