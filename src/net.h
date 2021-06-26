@@ -84,12 +84,11 @@ static const bool DEFAULT_FORCEDNSSEED = false;
 static const bool DEFAULT_DNSSEED = true;
 static const bool DEFAULT_FIXEDSEEDS = true;
 static const size_t DEFAULT_MAXRECEIVEBUFFER = 5 * 1000;
-static const size_t DEFAULT_MAXSENDBUFFER    = 1 * 1000;
+static const size_t DEFAULT_MAXSENDBUFFER = 1 * 1000;
 
 typedef int64_t NodeId;
 
-struct AddedNodeInfo
-{
+struct AddedNodeInfo {
     std::string strAddedNode;
     CService resolvedAddress;
     bool fConnected;
@@ -99,8 +98,7 @@ struct AddedNodeInfo
 class CNodeStats;
 class CClientUIInterface;
 
-struct CSerializedNetMsg
-{
+struct CSerializedNetMsg {
     CSerializedNetMsg() = default;
     CSerializedNetMsg(CSerializedNetMsg&&) = default;
     CSerializedNetMsg& operator=(CSerializedNetMsg&&) = default;
@@ -183,10 +181,9 @@ enum class ConnectionType {
 
 /** Convert ConnectionType enum to a string value */
 std::string ConnectionTypeAsString(ConnectionType conn_type);
-void Discover();
+void Discover(const ArgsManager& args);
 
-enum
-{
+enum {
     LOCAL_NONE,   // unknown
     LOCAL_IF,     // address a local interface listens on
     LOCAL_BIND,   // address explicit bound to
@@ -196,7 +193,7 @@ enum
     LOCAL_MAX
 };
 
-bool IsPeerAddrLocalGood(CNode *pnode);
+bool IsPeerAddrLocalGood(CNode* pnode);
 /** Returns a local address that we should advertise to this peer */
 std::optional<CAddress> GetLocalAddrForPeer(CNode* pnode, const ArgsManager& args);
 
@@ -215,7 +212,7 @@ bool AddLocal(const CNetAddr& addr, int nScore = LOCAL_NONE);
 void RemoveLocal(const CService& addr);
 bool SeenLocal(const CService& addr);
 bool IsLocal(const CService& addr);
-bool GetLocal(CService &addr, const CNetAddr *paddrPeer = nullptr);
+bool GetLocal(CService& addr, const CNetAddr* paddrPeer = nullptr);
 CAddress GetLocalAddress(const CNetAddr* paddrPeer, ServiceFlags nLocalServices, const ArgsManager& args);
 
 
@@ -280,7 +277,8 @@ public:
  * Ideally it should only contain receive time, payload,
  * command and size.
  */
-class CNetMessage {
+class CNetMessage
+{
 public:
     CDataStream m_recv;                  //!< received message data
     std::chrono::microseconds m_time{0}; //!< time of message receipt
@@ -300,7 +298,8 @@ public:
  * network receive buffer. It can deserialize the network buffer into a
  * transport protocol agnostic CNetMessage (command & payload)
  */
-class TransportDeserializer {
+class TransportDeserializer
+{
 public:
     // returns true if the current deserialization is complete
     virtual bool Complete() const = 0;
@@ -320,10 +319,10 @@ private:
     const NodeId m_node_id; // Only for logging
     mutable CHash256 hasher;
     mutable uint256 data_hash;
-    bool in_data;                   // parsing header (false) or data (true)
-    CDataStream hdrbuf;             // partially received header
-    CMessageHeader hdr;             // complete header
-    CDataStream vRecv;              // received message data
+    bool in_data;       // parsing header (false) or data (true)
+    CDataStream hdrbuf; // partially received header
+    CMessageHeader hdr; // complete header
+    CDataStream vRecv;  // received message data
     unsigned int nHdrPos;
     unsigned int nDataPos;
 
@@ -331,7 +330,8 @@ private:
     int readHeader(Span<const uint8_t> msg_bytes);
     int readData(Span<const uint8_t> msg_bytes);
 
-    void Reset() {
+    void Reset()
+    {
         vRecv.clear();
         hdrbuf.clear();
         hdrbuf.resize(24);
@@ -378,14 +378,16 @@ public:
 
 /** The TransportSerializer prepares messages for the network transport
  */
-class TransportSerializer {
+class TransportSerializer
+{
 public:
     // prepare message for transport (header construction, error-correction computation, payload encryption, etc.)
     virtual void prepareForTransport(CSerializedNetMsg& msg, std::vector<unsigned char>& header) = 0;
     virtual ~TransportSerializer() {}
 };
 
-class V1TransportSerializer  : public TransportSerializer {
+class V1TransportSerializer : public TransportSerializer
+{
 public:
     void prepareForTransport(CSerializedNetMsg& msg, std::vector<unsigned char>& header) override;
 };
@@ -440,10 +442,11 @@ public:
      */
     std::string cleanSubVer GUARDED_BY(cs_SubVer){};
     bool m_prefer_evict{false}; // This peer is preferred for eviction.
-    bool HasPermission(NetPermissionFlags permission) const {
+    bool HasPermission(NetPermissionFlags permission) const
+    {
         return NetPermissions::HasFlag(m_permissionFlags, permission);
     }
-    bool fClient{false}; // set by version message
+    bool fClient{false};        // set by version message
     bool m_limited_node{false}; //after BIP159, set by version message
     /** fSuccessfullyConnected is set to true on receiving VERACK from the peer. */
     std::atomic_bool fSuccessfullyConnected{false};
@@ -457,55 +460,63 @@ public:
     std::atomic_bool fPauseRecv{false};
     std::atomic_bool fPauseSend{false};
 
-    bool IsOutboundOrBlockRelayConn() const {
+    bool IsOutboundOrBlockRelayConn() const
+    {
         switch (m_conn_type) {
-            case ConnectionType::OUTBOUND_FULL_RELAY:
-            case ConnectionType::BLOCK_RELAY:
-                return true;
-            case ConnectionType::INBOUND:
-            case ConnectionType::MANUAL:
-            case ConnectionType::ADDR_FETCH:
-            case ConnectionType::FEELER:
-                return false;
+        case ConnectionType::OUTBOUND_FULL_RELAY:
+        case ConnectionType::BLOCK_RELAY:
+            return true;
+        case ConnectionType::INBOUND:
+        case ConnectionType::MANUAL:
+        case ConnectionType::ADDR_FETCH:
+        case ConnectionType::FEELER:
+            return false;
         } // no default case, so the compiler can warn about missing cases
 
         assert(false);
     }
 
-    bool IsFullOutboundConn() const {
+    bool IsFullOutboundConn() const
+    {
         return m_conn_type == ConnectionType::OUTBOUND_FULL_RELAY;
     }
 
-    bool IsManualConn() const {
+    bool IsManualConn() const
+    {
         return m_conn_type == ConnectionType::MANUAL;
     }
 
-    bool IsBlockOnlyConn() const {
+    bool IsBlockOnlyConn() const
+    {
         return m_conn_type == ConnectionType::BLOCK_RELAY;
     }
 
-    bool IsFeelerConn() const {
+    bool IsFeelerConn() const
+    {
         return m_conn_type == ConnectionType::FEELER;
     }
 
-    bool IsAddrFetchConn() const {
+    bool IsAddrFetchConn() const
+    {
         return m_conn_type == ConnectionType::ADDR_FETCH;
     }
 
-    bool IsInboundConn() const {
+    bool IsInboundConn() const
+    {
         return m_conn_type == ConnectionType::INBOUND;
     }
 
-    bool ExpectServicesFromConn() const {
+    bool ExpectServicesFromConn() const
+    {
         switch (m_conn_type) {
-            case ConnectionType::INBOUND:
-            case ConnectionType::MANUAL:
-            case ConnectionType::FEELER:
-                return false;
-            case ConnectionType::OUTBOUND_FULL_RELAY:
-            case ConnectionType::BLOCK_RELAY:
-            case ConnectionType::ADDR_FETCH:
-                return true;
+        case ConnectionType::INBOUND:
+        case ConnectionType::MANUAL:
+        case ConnectionType::FEELER:
+            return false;
+        case ConnectionType::OUTBOUND_FULL_RELAY:
+        case ConnectionType::BLOCK_RELAY:
+        case ConnectionType::ADDR_FETCH:
+            return true;
         } // no default case, so the compiler can warn about missing cases
 
         assert(false);
@@ -582,11 +593,13 @@ public:
     CNode(const CNode&) = delete;
     CNode& operator=(const CNode&) = delete;
 
-    NodeId GetId() const {
+    NodeId GetId() const
+    {
         return id;
     }
 
-    uint64_t GetLocalNonce() const {
+    uint64_t GetLocalNonce() const
+    {
         return nLocalHostNonce;
     }
 
@@ -651,7 +664,7 @@ public:
 
     void CloseSocketDisconnect();
 
-    void copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap);
+    void copyStats(CNodeStats& stats, const std::vector<bool>& m_asmap);
 
     ServiceFlags GetLocalServices() const
     {
@@ -665,7 +678,8 @@ public:
     std::string ConnectionTypeAsString() const { return ::ConnectionTypeAsString(m_conn_type); }
 
     /** A ping-pong round trip has completed successfully. Update latest and minimum ping times. */
-    void PongReceived(std::chrono::microseconds ping_time) {
+    void PongReceived(std::chrono::microseconds ping_time)
+    {
         m_last_ping_time = ping_time;
         m_min_ping_time = std::min(m_min_ping_time.load(), ping_time);
     }
@@ -693,7 +707,7 @@ private:
     //! service advertisements.
     const ServiceFlags nLocalServices;
 
-    std::list<CNetMessage> vRecvMsg;  // Used only by SocketHandler thread
+    std::list<CNetMessage> vRecvMsg; // Used only by SocketHandler thread
 
     mutable RecursiveMutex cs_addrName;
     std::string addrName GUARDED_BY(cs_addrName);
@@ -747,9 +761,7 @@ protected:
 class CConnman
 {
 public:
-
-    struct Options
-    {
+    struct Options {
         ServiceFlags nLocalServices = NODE_NONE;
         int nMaxConnections = 0;
         int m_max_outbound_full_relay = 0;
@@ -775,7 +787,8 @@ public:
         bool m_i2p_accept_incoming;
     };
 
-    void Init(const Options& connOptions) {
+    void Init(const Options& connOptions)
+    {
         nLocalServices = connOptions.nLocalServices;
         nMaxConnections = connOptions.nMaxConnections;
         m_max_outbound_full_relay = std::min(connOptions.m_max_outbound_full_relay, connOptions.nMaxConnections);
@@ -866,7 +879,8 @@ public:
     void SetTryNewOutboundPeer(bool flag);
     bool GetTryNewOutboundPeer() const;
 
-    void StartExtraBlockRelayPeers() {
+    void StartExtraBlockRelayPeers()
+    {
         LogPrint(BCLog::NET, "net: enabling extra block-relay-only peers\n");
         m_start_extra_block_relay_peers = true;
     }
@@ -948,7 +962,7 @@ public:
     void SetAsmap(std::vector<bool> asmap) { addrman.m_asmap = std::move(asmap); }
 
     /** Return true if we should disconnect the peer for failing an inactivity check. */
-    bool ShouldRunInactivityChecks(const CNode& node, std::optional<int64_t> now=std::nullopt) const;
+    bool ShouldRunInactivityChecks(const CNode& node, std::optional<int64_t> now = std::nullopt) const;
 
     const ArgsManager& GetArgs() const { return args; }
 
@@ -958,6 +972,7 @@ private:
         SOCKET socket;
         inline void AddSocketPermissionFlags(NetPermissionFlags& flags) const { NetPermissions::AddFlag(flags, m_permissions); }
         ListenSocket(SOCKET socket_, NetPermissionFlags permissions_) : socket(socket_), m_permissions(permissions_) {}
+
     private:
         NetPermissionFlags m_permissions;
     };
@@ -994,8 +1009,8 @@ private:
     void NotifyNumConnectionsChanged();
     /** Return true if the peer is inactive and should be disconnected. */
     bool InactivityCheck(const CNode& node) const;
-    bool GenerateSelectSet(std::set<SOCKET> &recv_set, std::set<SOCKET> &send_set, std::set<SOCKET> &error_set);
-    void SocketEvents(std::set<SOCKET> &recv_set, std::set<SOCKET> &send_set, std::set<SOCKET> &error_set);
+    bool GenerateSelectSet(std::set<SOCKET>& recv_set, std::set<SOCKET>& send_set, std::set<SOCKET>& error_set);
+    void SocketEvents(std::set<SOCKET>& recv_set, std::set<SOCKET>& send_set, std::set<SOCKET>& error_set);
     void SocketHandler();
     void ThreadSocketHandler();
     void ThreadDNSAddressSeed();
@@ -1014,8 +1029,8 @@ private:
     bool AlreadyConnectedToAddress(const CAddress& addr);
 
     bool AttemptToEvictConnection();
-    CNode* ConnectNode(CAddress addrConnect, const char *pszDest, bool fCountFailure, ConnectionType conn_type);
-    void AddWhitelistPermissionFlags(NetPermissionFlags& flags, const CNetAddr &addr) const;
+    CNode* ConnectNode(CAddress addrConnect, const char* pszDest, bool fCountFailure, ConnectionType conn_type);
+    void AddWhitelistPermissionFlags(NetPermissionFlags& flags, const CNetAddr& addr) const;
 
     void DeleteNode(CNode* pnode);
 
@@ -1039,12 +1054,12 @@ private:
     // Network usage totals
     mutable RecursiveMutex cs_totalBytesRecv;
     mutable RecursiveMutex cs_totalBytesSent;
-    uint64_t nTotalBytesRecv GUARDED_BY(cs_totalBytesRecv) {0};
-    uint64_t nTotalBytesSent GUARDED_BY(cs_totalBytesSent) {0};
+    uint64_t nTotalBytesRecv GUARDED_BY(cs_totalBytesRecv){0};
+    uint64_t nTotalBytesSent GUARDED_BY(cs_totalBytesSent){0};
 
     // outbound limit & stats
-    uint64_t nMaxOutboundTotalBytesSentInCycle GUARDED_BY(cs_totalBytesSent) {0};
-    std::chrono::seconds nMaxOutboundCycleStartTime GUARDED_BY(cs_totalBytesSent) {0};
+    uint64_t nMaxOutboundTotalBytesSentInCycle GUARDED_BY(cs_totalBytesSent){0};
+    std::chrono::seconds nMaxOutboundCycleStartTime GUARDED_BY(cs_totalBytesSent){0};
     uint64_t nMaxOutboundLimit GUARDED_BY(cs_totalBytesSent);
 
     // P2P timeout in seconds
@@ -1198,10 +1213,9 @@ private:
 std::chrono::microseconds PoissonNextSend(std::chrono::microseconds now, std::chrono::seconds average_interval);
 
 /** Dump binary message to file, with timestamp */
-void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming);
+void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming, const ArgsManager& args);
 
-struct NodeEvictionCandidate
-{
+struct NodeEvictionCandidate {
     NodeId id;
     int64_t nTimeConnected;
     std::chrono::microseconds m_min_ping_time;

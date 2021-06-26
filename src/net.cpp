@@ -208,7 +208,7 @@ std::optional<CAddress> GetLocalAddrForPeer(CNode* pnode, const ArgsManager& arg
                                        rng.randbits((GetnScore(addrLocal) > LOCAL_MANUAL) ? 3 : 1) == 0)) {
         addrLocal.SetIP(pnode->GetAddrLocal());
     }
-    if (addrLocal.IsRoutable() || gArgs.GetBoolArg("-addrmantest", false)) {
+    if (addrLocal.IsRoutable() || args.GetBoolArg("-addrmantest", false)) {
         LogPrint(BCLog::NET, "Advertising address %s to peer=%d\n", addrLocal.ToString(), pnode->GetId());
         return addrLocal;
     }
@@ -1118,8 +1118,8 @@ void CConnman::CreateNodeFromAcceptedSocket(SOCKET hSocket,
     AddWhitelistPermissionFlags(permissionFlags, addr);
     if (NetPermissions::HasFlag(permissionFlags, NetPermissionFlags::Implicit)) {
         NetPermissions::ClearFlag(permissionFlags, NetPermissionFlags::Implicit);
-        if (gArgs.GetBoolArg("-whitelistforcerelay", DEFAULT_WHITELISTFORCERELAY)) NetPermissions::AddFlag(permissionFlags, NetPermissionFlags::ForceRelay);
-        if (gArgs.GetBoolArg("-whitelistrelay", DEFAULT_WHITELISTRELAY)) NetPermissions::AddFlag(permissionFlags, NetPermissionFlags::Relay);
+        if (args.GetBoolArg("-whitelistforcerelay", DEFAULT_WHITELISTFORCERELAY)) NetPermissions::AddFlag(permissionFlags, NetPermissionFlags::ForceRelay);
+        if (args.GetBoolArg("-whitelistrelay", DEFAULT_WHITELISTRELAY)) NetPermissions::AddFlag(permissionFlags, NetPermissionFlags::Relay);
         NetPermissions::AddFlag(permissionFlags, NetPermissionFlags::Mempool);
         NetPermissions::AddFlag(permissionFlags, NetPermissionFlags::NoBan);
     }
@@ -1813,8 +1813,8 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
     // Minimum time before next feeler connection (in microseconds).
     auto next_feeler = PoissonNextSend(start, FEELER_INTERVAL);
     auto next_extra_block_relay = PoissonNextSend(start, EXTRA_BLOCK_RELAY_ONLY_PEER_INTERVAL);
-    const bool dnsseed = gArgs.GetBoolArg("-dnsseed", DEFAULT_DNSSEED);
-    bool add_fixed_seeds = gArgs.GetBoolArg("-fixedseeds", DEFAULT_FIXEDSEEDS);
+    const bool dnsseed = args.GetBoolArg("-dnsseed", DEFAULT_DNSSEED);
+    bool add_fixed_seeds = args.GetBoolArg("-fixedseeds", DEFAULT_FIXEDSEEDS);
 
     if (!add_fixed_seeds) {
         LogPrintf("Fixed seeds are disabled\n");
@@ -2259,7 +2259,7 @@ void CConnman::ThreadI2PAcceptIncoming()
         }
 
         if (!advertising_listen_addr) {
-            AddLocal(conn.me, LOCAL_MANUAL, gArgs);
+            AddLocal(conn.me, LOCAL_MANUAL, args);
             advertising_listen_addr = true;
         }
 
@@ -2330,7 +2330,7 @@ bool CConnman::BindListenPort(const CService& addrBind, bilingual_str& strError,
     return true;
 }
 
-void Discover()
+void Discover(const ArgsManager& args)
 {
     if (!fDiscover)
         return;
@@ -2342,7 +2342,7 @@ void Discover()
         std::vector<CNetAddr> vaddr;
         if (LookupHost(pszHostName, vaddr, 0, true)) {
             for (const CNetAddr& addr : vaddr) {
-                if (AddLocal(addr, LOCAL_IF, gArgs))
+                if (AddLocal(addr, LOCAL_IF, args))
                     LogPrintf("%s: %s - %s\n", __func__, pszHostName, addr.ToString());
             }
         }
@@ -2359,12 +2359,12 @@ void Discover()
             if (ifa->ifa_addr->sa_family == AF_INET) {
                 struct sockaddr_in* s4 = (struct sockaddr_in*)(ifa->ifa_addr);
                 CNetAddr addr(s4->sin_addr);
-                if (AddLocal(addr, LOCAL_IF, gArgs))
+                if (AddLocal(addr, LOCAL_IF, args))
                     LogPrintf("%s: IPv4 %s: %s\n", __func__, ifa->ifa_name, addr.ToString());
             } else if (ifa->ifa_addr->sa_family == AF_INET6) {
                 struct sockaddr_in6* s6 = (struct sockaddr_in6*)(ifa->ifa_addr);
                 CNetAddr addr(s6->sin6_addr);
-                if (AddLocal(addr, LOCAL_IF, gArgs))
+                if (AddLocal(addr, LOCAL_IF, args))
                     LogPrintf("%s: IPv6 %s: %s\n", __func__, ifa->ifa_name, addr.ToString());
             }
         }
@@ -2372,6 +2372,7 @@ void Discover()
     }
 #endif
 }
+
 
 void CConnman::SetNetworkActive(bool active)
 {
@@ -2416,7 +2417,7 @@ bool CConnman::Bind(const CService& addr, unsigned int flags, NetPermissionFlags
     }
 
     if (addr.IsRoutable() && fDiscover && !(flags & BF_DONT_ADVERTISE) && !NetPermissions::HasFlag(permissions, NetPermissionFlags::NoBan)) {
-        AddLocal(addr, LOCAL_BIND, gArgs);
+        AddLocal(addr, LOCAL_BIND, args);
     }
 
     return true;
@@ -2464,7 +2465,7 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
 
     proxyType i2p_sam;
     if (GetProxy(NET_I2P, i2p_sam)) {
-        m_i2p_sam_session = std::make_unique<i2p::sam::Session>(gArgs.GetDataDirNet() / "i2p_private_key",
+        m_i2p_sam_session = std::make_unique<i2p::sam::Session>(args.GetDataDirNet() / "i2p_private_key",
                                                                 i2p_sam.proxy, &interruptNet);
     }
 
@@ -2490,7 +2491,7 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
 
     if (m_use_addrman_outgoing) {
         // Load addresses from anchors.dat
-        m_anchors = ReadAnchors(gArgs.GetDataDirNet() / ANCHORS_DATABASE_FILENAME);
+        m_anchors = ReadAnchors(args.GetDataDirNet() / ANCHORS_DATABASE_FILENAME);
         if (m_anchors.size() > MAX_BLOCK_RELAY_ONLY_ANCHORS) {
             m_anchors.resize(MAX_BLOCK_RELAY_ONLY_ANCHORS);
         }
@@ -2526,7 +2527,7 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
     // Send and receive from sockets, accept connections
     threadSocketHandler = std::thread(&util::TraceThread, "net", [this] { ThreadSocketHandler(); });
 
-    if (!gArgs.GetBoolArg("-dnsseed", DEFAULT_DNSSEED))
+    if (!args.GetBoolArg("-dnsseed", DEFAULT_DNSSEED))
         LogPrintf("DNS seeding disabled\n");
     else
         threadDNSAddressSeed = std::thread(&util::TraceThread, "dnsseed", [this] { ThreadDNSAddressSeed(); });
@@ -2630,7 +2631,7 @@ void CConnman::StopNodes()
             if (anchors_to_dump.size() > MAX_BLOCK_RELAY_ONLY_ANCHORS) {
                 anchors_to_dump.resize(MAX_BLOCK_RELAY_ONLY_ANCHORS);
             }
-            DumpAnchors(gArgs.GetDataDirNet() / ANCHORS_DATABASE_FILENAME, anchors_to_dump);
+            DumpAnchors(args.GetDataDirNet() / ANCHORS_DATABASE_FILENAME, anchors_to_dump);
         }
     }
 
@@ -2958,7 +2959,7 @@ void CConnman::PushMessage(CNode* pnode, CSerializedNetMsg&& msg)
     size_t nMessageSize = msg.data.size();
     LogPrint(BCLog::NET, "sending %s (%d bytes) peer=%d\n", SanitizeString(msg.m_type), nMessageSize, pnode->GetId());
     if (args.GetBoolArg("-capturemessages", false)) {
-        CaptureMessage(pnode->addr, msg.m_type, msg.data, /* incoming */ false);
+        CaptureMessage(pnode->addr, msg.m_type, msg.data, /* incoming */ false, args);
     }
 
     // make sure we use the appropriate network transport format
@@ -3027,7 +3028,7 @@ uint64_t CConnman::CalculateKeyedNetGroup(const CAddress& ad) const
     return GetDeterministicRandomizer(RANDOMIZER_ID_NETGROUP).Write(vchNetGroup.data(), vchNetGroup.size()).Finalize();
 }
 
-void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming)
+void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming, const ArgsManager& args)
 {
     // Note: This function captures the message at the time of processing,
     // not at socket receive/send time.
@@ -3039,7 +3040,7 @@ void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Spa
     std::string clean_addr = addr.ToString();
     std::replace(clean_addr.begin(), clean_addr.end(), ':', '_');
 
-    fs::path base_path = gArgs.GetDataDirNet() / "message_capture" / clean_addr;
+    fs::path base_path = args.GetDataDirNet() / "message_capture" / clean_addr;
     fs::create_directories(base_path);
 
     fs::path path = base_path / (is_incoming ? "msgs_recv.dat" : "msgs_sent.dat");
