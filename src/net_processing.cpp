@@ -376,7 +376,7 @@ private:
     CTxMemPool& m_mempool;
     TxRequestTracker m_txrequest GUARDED_BY(::cs_main);
 
-    const ArgsManager& args;
+    const ArgsManager& m_args;
 
     /** The height of the best chain */
     std::atomic<int> m_best_height{-1};
@@ -1248,7 +1248,7 @@ bool PeerManagerImpl::GetNodeStateStats(NodeId nodeid, CNodeStateStats& stats) c
 
 void PeerManagerImpl::AddToCompactExtraTransactions(const CTransactionRef& tx)
 {
-    size_t max_extra_txn = gArgs.GetArg("-blockreconstructionextratxn", DEFAULT_BLOCK_RECONSTRUCTION_EXTRA_TXN);
+    size_t max_extra_txn = m_args.GetArg("-blockreconstructionextratxn", DEFAULT_BLOCK_RECONSTRUCTION_EXTRA_TXN);
     if (max_extra_txn <= 0)
         return;
     if (!vExtraTxnForCompact.size())
@@ -1376,7 +1376,7 @@ PeerManagerImpl::PeerManagerImpl(const CChainParams& chainparams, CConnman& conn
       m_banman(banman),
       m_chainman(chainman),
       m_mempool(pool),
-      args(m_connman.GetArgs()),
+      m_args(m_connman.GetArgs()),
       m_stale_tip_check_time(0),
       m_ignore_incoming_txs(ignore_incoming_txs)
 {
@@ -2562,7 +2562,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
             // We skip this for block-relay-only peers to avoid potentially leaking
             // information about our block-relay-only connections via address relay.
             if (fListen && !m_chainman.ActiveChainstate().IsInitialBlockDownload()) {
-                CAddress addr = GetLocalAddress(&pfrom.addr, pfrom.GetLocalServices(), args);
+                CAddress addr = GetLocalAddress(&pfrom.addr, pfrom.GetLocalServices(), m_args);
                 FastRandomContext insecure_rand;
                 if (addr.IsRoutable()) {
                     LogPrint(BCLog::NET, "ProcessMessages: advertising address %s\n", addr.ToString());
@@ -3208,7 +3208,7 @@ void PeerManagerImpl::ProcessMessage(CNode& pfrom, const std::string& msg_type, 
                 m_txrequest.ForgetTxHash(tx.GetWitnessHash());
 
                 // DoS prevention: do not allow m_orphanage to grow unbounded (see CVE-2012-3789)
-                unsigned int nMaxOrphanTx = (unsigned int)std::max((int64_t)0, args.GetArg("-maxorphantx", DEFAULT_MAX_ORPHAN_TRANSACTIONS));
+                unsigned int nMaxOrphanTx = (unsigned int)std::max((int64_t)0, m_args.GetArg("-maxorphantx", DEFAULT_MAX_ORPHAN_TRANSACTIONS));
                 unsigned int nEvicted = m_orphanage.LimitOrphans(nMaxOrphanTx);
                 if (nEvicted > 0) {
                     LogPrint(BCLog::MEMPOOL, "orphanage overflow, removed %u tx\n", nEvicted);
@@ -3963,8 +3963,8 @@ bool PeerManagerImpl::ProcessMessages(CNode* pfrom, std::atomic<bool>& interrupt
     }
     CNetMessage& msg(msgs.front());
 
-    if (args.GetBoolArg("-capturemessages", false)) {
-        CaptureMessage(pfrom->addr, msg.m_command, MakeUCharSpan(msg.m_recv), /* incoming */ true, args);
+    if (m_args.GetBoolArg("-capturemessages", false)) {
+        CaptureMessage(pfrom->addr, msg.m_command, MakeUCharSpan(msg.m_recv), /* incoming */ true, m_args);
     }
 
     msg.SetVersion(pfrom->GetCommonVersion());
@@ -4227,7 +4227,7 @@ void PeerManagerImpl::MaybeSendAddr(CNode& node, Peer& peer, std::chrono::micros
         if (peer.m_next_local_addr_send != 0us) {
             peer.m_addr_known->reset();
         }
-        if (std::optional<CAddress> local_addr = GetLocalAddrForPeer(&node, args)) {
+        if (std::optional<CAddress> local_addr = GetLocalAddrForPeer(&node, m_args)) {
             FastRandomContext insecure_rand;
             PushAddress(peer, *local_addr, insecure_rand);
         }
@@ -4286,7 +4286,7 @@ void PeerManagerImpl::MaybeSendFeefilter(CNode& pto, std::chrono::microseconds c
     // peers with the forcerelay permission should not filter txs to us
     if (pto.HasPermission(NetPermissionFlags::ForceRelay)) return;
 
-    CAmount currentFilter = m_mempool.GetMinFee(args.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFeePerK();
+    CAmount currentFilter = m_mempool.GetMinFee(m_args.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000).GetFeePerK();
     static FeeFilterRounder g_filter_rounder{CFeeRate{DEFAULT_MIN_RELAY_TX_FEE}};
 
     if (m_chainman.ActiveChainstate().IsInitialBlockDownload()) {
