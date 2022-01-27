@@ -1435,7 +1435,6 @@ CoinsViews::CoinsViews(
 
 void CoinsViews::InitCache()
 {
-    AssertLockHeld(::cs_main);
     m_cacheview = std::make_unique<CCoinsViewCache>(&m_catcherview);
 }
 
@@ -1466,7 +1465,6 @@ void CChainState::InitCoinsDB(
 
 void CChainState::InitCoinsCache(size_t cache_size_bytes)
 {
-    AssertLockHeld(::cs_main);
     assert(m_coins_views != nullptr);
     m_coinstip_cache_size_bytes = cache_size_bytes;
     m_coins_views->InitCache();
@@ -1540,7 +1538,6 @@ void CChainState::CheckForkWarningConditions()
 // Called both upon regular invalid block discovery *and* InvalidateBlock
 void CChainState::InvalidChainFound(CBlockIndex* pindexNew)
 {
-    AssertLockHeld(cs_main);
     if (!m_chainman.m_best_invalid || pindexNew->nChainWork > m_chainman.m_best_invalid->nChainWork) {
         m_chainman.m_best_invalid = pindexNew;
     }
@@ -1563,7 +1560,6 @@ void CChainState::InvalidChainFound(CBlockIndex* pindexNew)
 // which does its own setBlockIndexCandidates management.
 void CChainState::InvalidBlockFound(CBlockIndex* pindex, const BlockValidationState& state)
 {
-    AssertLockHeld(cs_main);
     if (state.GetResult() != BlockValidationResult::BLOCK_MUTATED) {
         pindex->nStatus |= BLOCK_FAILED_VALID;
         m_chainman.m_failed_blocks.insert(pindex);
@@ -1924,10 +1920,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
 {
     AssertLockHeld(cs_main);
     assert(pindex);
-
-    uint256 block_hash{block.GetHash()};
-    assert(*pindex->phashBlock == block_hash);
-
+    assert(*pindex->phashBlock == block.GetHash());
     int64_t nTimeStart = GetTimeMicros();
 
     // Check it again in case a previous version let a bad block in
@@ -1961,7 +1954,7 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
 
     // Special case for the genesis block, skipping connection of its transactions
     // (its coinbase is unspendable)
-    if (block_hash == m_params.GetConsensus().hashGenesisBlock) {
+    if (block.GetHash() == m_params.GetConsensus().hashGenesisBlock) {
         if (!fJustCheck)
             view.SetBestBlock(pindex->GetBlockHash());
         return true;
@@ -2218,12 +2211,12 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
     LogPrint(BCLog::BENCH, "    - Index writing: %.2fms [%.2fs (%.2fms/blk)]\n", MILLI * (nTime5 - nTime4), nTimeIndex * MICRO, nTimeIndex * MILLI / nBlocksTotal);
 
     TRACE6(validation, block_connected,
-        block_hash.data(),
+        block.GetHash().data(),
         pindex->nHeight,
         block.vtx.size(),
         nInputs,
         nSigOpsCost,
-        nTime5 - nTimeStart // in microseconds (µs)
+        GetTimeMicros() - nTimeStart // in microseconds (µs)
     );
 
     return true;
@@ -2231,7 +2224,6 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
 
 CoinsCacheSizeState CChainState::GetCoinsCacheSizeState()
 {
-    AssertLockHeld(::cs_main);
     return this->GetCoinsCacheSizeState(
         m_coinstip_cache_size_bytes,
         m_blockman.args().GetIntArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000);
@@ -2241,7 +2233,6 @@ CoinsCacheSizeState CChainState::GetCoinsCacheSizeState(
     size_t max_coins_cache_size_bytes,
     size_t max_mempool_size_bytes)
 {
-    AssertLockHeld(::cs_main);
     const int64_t nMempoolUsage = m_mempool ? m_mempool->DynamicMemoryUsage() : 0;
     int64_t cacheSize = CoinsTip().DynamicMemoryUsage();
     int64_t nTotalSpace =
@@ -2374,13 +2365,14 @@ bool CChainState::FlushStateToDisk(
                 return AbortNode(state, "Failed to write to coin database");
             nLastFlush = nNow;
             full_flush_completed = true;
-            TRACE5(utxocache, flush,
-                   (int64_t)(GetTimeMicros() - nNow.count()), // in microseconds (µs)
-                   (u_int32_t)mode,
-                   (u_int64_t)coins_count,
-                   (u_int64_t)coins_mem_usage,
-                   (bool)fFlushForPrune);
         }
+        TRACE6(utxocache, flush,
+               (int64_t)(GetTimeMicros() - nNow.count()), // in microseconds (µs)
+               (u_int32_t)mode,
+               (u_int64_t)coins_count,
+               (u_int64_t)coins_mem_usage,
+               (bool)fFlushForPrune,
+               (bool)fDoFullFlush);
     }
     if (full_flush_completed) {
         // Update best block in wallet (so we can detect restored wallets).
@@ -2449,7 +2441,6 @@ static void UpdateTipLog(
 
 void CChainState::UpdateTip(const CBlockIndex* pindexNew)
 {
-    AssertLockHeld(::cs_main);
     const auto& coins_tip = this->CoinsTip();
 
     // The remainder of the function isn't relevant if we are not acting on
@@ -4508,8 +4499,8 @@ static const uint64_t MEMPOOL_DUMP_VERSION = 1;
 
 bool LoadMempool(CTxMemPool& pool, CChainState& active_chainstate, FopenFn mockable_fopen_function)
 {
-    int64_t nExpiryTimeout = gArgs.GetIntArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60;
-    FILE* filestr{mockable_fopen_function(gArgs.GetDataDirNet() / "mempool.dat", "rb")};
+    int64_t nExpiryTimeout = active_chainstate.args().GetIntArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60;
+    FILE* filestr{mockable_fopen_function(active_chainstate.args().GetDataDirNet() / "mempool.dat", "rb")};
     CAutoFile file(filestr, SER_DISK, CLIENT_VERSION);
     if (file.IsNull()) {
         LogPrintf("Failed to open mempool file from disk. Continuing anyway.\n");
@@ -4590,7 +4581,7 @@ bool LoadMempool(CTxMemPool& pool, CChainState& active_chainstate, FopenFn mocka
     return true;
 }
 
-bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool skip_file_commit)
+bool DumpMempool(const CTxMemPool& pool, const ArgsManager& args, FopenFn mockable_fopen_function, bool skip_file_commit)
 {
     int64_t start = GetTimeMicros();
 
@@ -4613,7 +4604,7 @@ bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool s
     int64_t mid = GetTimeMicros();
 
     try {
-        FILE* filestr{mockable_fopen_function(gArgs.GetDataDirNet() / "mempool.dat.new", "wb")};
+        FILE* filestr{mockable_fopen_function(args.GetDataDirNet() / "mempool.dat.new", "wb")};
         if (!filestr) {
             return false;
         }
@@ -4639,7 +4630,7 @@ bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool s
         if (!skip_file_commit && !FileCommit(file.Get()))
             throw std::runtime_error("FileCommit failed");
         file.fclose();
-        if (!RenameOver(gArgs.GetDataDirNet() / "mempool.dat.new", gArgs.GetDataDirNet() / "mempool.dat")) {
+        if (!RenameOver(args.GetDataDirNet() / "mempool.dat.new", args.GetDataDirNet() / "mempool.dat")) {
             throw std::runtime_error("Rename failed");
         }
         int64_t last = GetTimeMicros();
