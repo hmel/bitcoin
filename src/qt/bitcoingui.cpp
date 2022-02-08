@@ -612,8 +612,6 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel, interfaces::BlockAndH
             trayIcon->setVisible(optionsModel->getShowTrayIcon());
         }
     } else {
-        // Disable possibility to show main window via action
-        toggleHideAction->setEnabled(false);
         if(trayIconMenu)
         {
             // Disable context menu on tray icon
@@ -805,9 +803,10 @@ void BitcoinGUI::createTrayIconMenu()
 =======
 
     // Configuration of the tray icon (or Dock icon) menu.
+    QAction* show_hide_action{nullptr};
 #ifndef Q_OS_MAC
     // Note: On macOS, the Dock icon's menu already has Show / Hide action.
-    trayIconMenu->addAction(toggleHideAction);
+    show_hide_action = trayIconMenu->addAction(tr("Show / &Hide"), this, &BitcoinGUI::toggleHidden);
     trayIconMenu->addSeparator();
 #endif // Q_OS_MAC
 
