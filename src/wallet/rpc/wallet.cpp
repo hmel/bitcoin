@@ -123,7 +123,7 @@ static RPCHelpMan getwalletinfo()
 },
     };
 }
-
+/*
 static RPCHelpMan listwalletdir()
 {
     return RPCHelpMan{"listwalletdir",
@@ -160,6 +160,7 @@ static RPCHelpMan listwalletdir()
 },
     };
 }
+*/
 
 static RPCHelpMan listwallets()
 {
@@ -702,7 +703,7 @@ static const CRPCCommand commands[] =
     { "wallet",             &listsinceblock,                 },
     { "wallet",             &listtransactions,               },
     { "wallet",             &listunspent,                    },
-    { "wallet",             &listwalletdir,                  },
+    //    { "wallet",             &listwalletdir,                  },
     { "wallet",             &listwallets,                    },
     { "wallet",             &loadwallet,                     },
     { "wallet",             &lockunspent,                    },

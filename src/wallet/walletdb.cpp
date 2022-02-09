@@ -1101,7 +1101,7 @@ bool WalletBatch::TxnAbort()
     return m_batch->TxnAbort();
 }
 
-std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error)
+std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, const ArgsManager& args)
 {
     bool exists;
     try {
@@ -1165,7 +1165,7 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
 
     if (format == DatabaseFormat::SQLITE) {
 #ifdef USE_SQLITE
-        return MakeSQLiteDatabase(path, options, status, error);
+        return MakeSQLiteDatabase(path, options, status, error, args);
 #endif
         error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support SQLite database format.", fs::PathToString(path)));
         status = DatabaseStatus::FAILED_BAD_FORMAT;
@@ -1173,7 +1173,7 @@ std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const Databas
     }
 
 #ifdef USE_BDB
-    return MakeBerkeleyDatabase(path, options, status, error);
+    return MakeBerkeleyDatabase(path, options, status, error, args);
 #endif
     error = Untranslated(strprintf("Failed to open database path '%s'. Build does not support Berkeley DB database format.", fs::PathToString(path)));
     status = DatabaseStatus::FAILED_BAD_FORMAT;
@@ -1187,12 +1187,12 @@ std::unique_ptr<WalletDatabase> CreateDummyWalletDatabase()
 }
 
 /** Return object for accessing temporary in-memory database. */
-std::unique_ptr<WalletDatabase> CreateMockWalletDatabase()
+std::unique_ptr<WalletDatabase> CreateMockWalletDatabase(const ArgsManager& args)
 {
 #ifdef USE_SQLITE
     return std::make_unique<SQLiteDatabase>("", "", true);
 #elif USE_BDB
-    return std::make_unique<BerkeleyDatabase>(std::make_shared<BerkeleyEnvironment>(), "");
+    return std::make_unique<BerkeleyDatabase>(std::make_shared<BerkeleyEnvironment>(args), "", args);
 #endif
 }
 } // namespace wallet

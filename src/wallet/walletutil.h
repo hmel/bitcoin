@@ -5,6 +5,7 @@
 #ifndef BITCOIN_WALLET_WALLETUTIL_H
 #define BITCOIN_WALLET_WALLETUTIL_H
 
+#include "util/system.h"
 #include <fs.h>
 #include <script/descriptor.h>
 
@@ -70,7 +71,7 @@ enum WalletFlags : uint64_t {
 };
 
 //! Get the path of the wallet directory.
-fs::path GetWalletDir();
+fs::path GetWalletDir(const ArgsManager& args);
 
 /** Descriptor with some wallet metadata */
 class WalletDescriptor

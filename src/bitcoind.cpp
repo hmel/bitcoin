@@ -148,7 +148,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
     std::any context{&node};
     try
     {
-        if (!CheckDataDirOption()) {
+        if (!CheckDataDirOption(args)) {
             return InitError(Untranslated(strprintf("Specified data directory \"%s\" does not exist.\n", args.GetArg("-datadir", ""))));
         }
         if (!args.ReadConfigFiles(error, true)) {
@@ -156,7 +156,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
         }
         // Check for chain settings (Params() calls are only valid after this clause)
         try {
-            SelectParams(args.GetChainName());
+            SelectParams(args.GetChainName(), args);
         } catch (const std::exception& e) {
             return InitError(Untranslated(strprintf("%s\n", e.what())));
         }
@@ -186,7 +186,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }
-        if (!AppInitSanityChecks())
+        if (!AppInitSanityChecks(args.GetDataDirNet()))
         {
             // InitError will have been called with detailed error, which ends up on console
             return false;
@@ -221,7 +221,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
 #endif // HAVE_DECL_FORK
         }
         // Lock data directory after daemonization
-        if (!AppInitLockDataDirectory())
+        if (!AppInitLockDataDirectory(args.GetDataDirNet()))
         {
             // If locking the data directory failed, exit immediately
             return false;
@@ -260,7 +260,8 @@ int main(int argc, char* argv[])
 
     NodeContext node;
     int exit_status;
-    std::unique_ptr<interfaces::Init> init = interfaces::MakeNodeInit(node, argc, argv, exit_status);
+    ArgsManager args;
+    std::unique_ptr<interfaces::Init> init = interfaces::MakeNodeInit(args, node, argc, argv, exit_status);
     if (!init) {
         return exit_status;
     }

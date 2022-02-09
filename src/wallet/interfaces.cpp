@@ -564,12 +564,12 @@ public:
     }
     std::string getWalletDir() override
     {
-        return fs::PathToString(GetWalletDir());
+        return fs::PathToString(GetWalletDir(*m_context.args));
     }
     std::vector<std::string> listWalletDir() override
     {
         std::vector<std::string> paths;
-        for (auto& path : ListDatabases(GetWalletDir())) {
+        for (auto& path : ListDatabases(GetWalletDir(*m_context.args))) {
             paths.push_back(fs::PathToString(path));
         }
         return paths;

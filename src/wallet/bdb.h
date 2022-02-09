@@ -50,6 +50,7 @@ private:
     // Don't change into fs::path, as that can result in
     // shutdown problems/crashes caused by a static initialized internal pointer.
     std::string strPath;
+    const ArgsManager& m_args;
 
 public:
     std::unique_ptr<DbEnv> dbenv;
@@ -57,8 +58,8 @@ public:
     std::unordered_map<std::string, WalletDatabaseFileId> m_fileids;
     std::condition_variable_any m_db_in_use;
 
-    explicit BerkeleyEnvironment(const fs::path& env_directory);
-    BerkeleyEnvironment();
+    explicit BerkeleyEnvironment(const fs::path& env_directory, const ArgsManager& args);
+    BerkeleyEnvironment(const ArgsManager& args);
     ~BerkeleyEnvironment();
     void Reset();
 
@@ -98,8 +99,8 @@ public:
     BerkeleyDatabase() = delete;
 
     /** Create DB handle to real database */
-    BerkeleyDatabase(std::shared_ptr<BerkeleyEnvironment> env, std::string filename) :
-        WalletDatabase(), env(std::move(env)), strFile(std::move(filename))
+    BerkeleyDatabase(std::shared_ptr<BerkeleyEnvironment> env, std::string filename, const ArgsManager& args) :
+            WalletDatabase(), env(std::move(env)), strFile(std::move(filename)), m_args(args)
     {
         auto inserted = this->env->m_databases.emplace(strFile, std::ref(*this));
         assert(inserted.second);
@@ -161,6 +162,8 @@ public:
 
     std::string strFile;
 
+    const ArgsManager& m_args;
+
     /** Make a BerkeleyBatch connected to this database */
     std::unique_ptr<DatabaseBatch> MakeBatch(bool flush_on_close = true) override;
 };
@@ -203,9 +206,10 @@ protected:
     bool fFlushOnClose;
     BerkeleyEnvironment *env;
     BerkeleyDatabase& m_database;
+    const ArgsManager& m_args;
 
 public:
-    explicit BerkeleyBatch(BerkeleyDatabase& database, const bool fReadOnly, bool fFlushOnCloseIn=true);
+    explicit BerkeleyBatch(BerkeleyDatabase& database, const bool fReadOnly, const ArgsManager& args, bool fFlushOnCloseIn=true);
     ~BerkeleyBatch() override;
 
     BerkeleyBatch(const BerkeleyBatch&) = delete;
@@ -229,7 +233,7 @@ std::string BerkeleyDatabaseVersion();
 bool BerkeleyDatabaseSanityCheck();
 
 //! Return object giving access to Berkeley database at specified path.
-std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+std::unique_ptr<BerkeleyDatabase> MakeBerkeleyDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, const ArgsManager& args);
 } // namespace wallet
 
 #endif // BITCOIN_WALLET_BDB_H

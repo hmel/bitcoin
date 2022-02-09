@@ -5,6 +5,7 @@
 #ifndef BITCOIN_WALLET_SCRIPTPUBKEYMAN_H
 #define BITCOIN_WALLET_SCRIPTPUBKEYMAN_H
 
+#include "util/system.h"
 #include <psbt.h>
 #include <script/descriptor.h>
 #include <script/signingprovider.h>
@@ -167,9 +168,10 @@ class ScriptPubKeyMan
 {
 protected:
     WalletStorage& m_storage;
+    const ArgsManager& m_args;
 
 public:
-    explicit ScriptPubKeyMan(WalletStorage& storage) : m_storage(storage) {}
+    explicit ScriptPubKeyMan(WalletStorage& storage, const ArgsManager& args) : m_storage(storage), m_args(args) {}
     virtual ~ScriptPubKeyMan() {};
     virtual bool GetNewDestination(const OutputType type, CTxDestination& dest, bilingual_str& error) { return false; }
     virtual isminetype IsMine(const CScript& script) const { return ISMINE_NO; }
@@ -556,12 +558,12 @@ protected:
   WalletDescriptor m_wallet_descriptor GUARDED_BY(cs_desc_man);
 
 public:
-    DescriptorScriptPubKeyMan(WalletStorage& storage, WalletDescriptor& descriptor)
-        :   ScriptPubKeyMan(storage),
+    DescriptorScriptPubKeyMan(WalletStorage& storage, WalletDescriptor& descriptor, const ArgsManager& args)
+            : ScriptPubKeyMan(storage, args),
             m_wallet_descriptor(descriptor)
         {}
-    DescriptorScriptPubKeyMan(WalletStorage& storage)
-        :   ScriptPubKeyMan(storage)
+    DescriptorScriptPubKeyMan(WalletStorage& storage, const ArgsManager& args)
+            : ScriptPubKeyMan(storage, args)
         {}
 
     mutable RecursiveMutex cs_desc_man;

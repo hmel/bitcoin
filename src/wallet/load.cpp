@@ -48,7 +48,7 @@ bool VerifyWallets(WalletContext& context)
         args.ForceSetArg("-walletdir", fs::PathToString(canonical_wallet_dir));
     }
 
-    LogPrintf("Using wallet directory %s\n", fs::PathToString(GetWalletDir()));
+    LogPrintf("Using wallet directory %s\n", fs::PathToString(GetWalletDir(args)));
 
     chain.initMessage(_("Verifying wallet(s)…").translated);
 
@@ -60,7 +60,7 @@ bool VerifyWallets(WalletContext& context)
         bilingual_str error_string;
         options.require_existing = true;
         options.verify = false;
-        if (MakeWalletDatabase("", options, status, error_string)) {
+        if (MakeWalletDatabase("", options, status, error_string, args)) {
             util::SettingsValue wallets(util::SettingsValue::VARR);
             wallets.push_back(""); // Default wallet name is ""
             // Pass write=false because no need to write file and probably
@@ -75,7 +75,7 @@ bool VerifyWallets(WalletContext& context)
 
     for (const auto& wallet : chain.getSettingsList("wallet")) {
         const auto& wallet_file = wallet.get_str();
-        const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(), fs::PathFromString(wallet_file));
+        const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(args), fs::PathFromString(wallet_file));
 
         if (!wallet_paths.insert(path).second) {
             chain.initWarning(strprintf(_("Ignoring duplicate -wallet %s."), wallet_file));
@@ -87,7 +87,7 @@ bool VerifyWallets(WalletContext& context)
         options.require_existing = true;
         options.verify = true;
         bilingual_str error_string;
-        if (!MakeWalletDatabase(wallet_file, options, status, error_string)) {
+        if (!MakeWalletDatabase(wallet_file, options, status, error_string, args)) {
             if (status == DatabaseStatus::FAILED_NOT_FOUND) {
                 chain.initWarning(Untranslated(strprintf("Skipping -wallet path that doesn't exist. %s", error_string.original)));
             } else {
@@ -116,7 +116,7 @@ bool LoadWallets(WalletContext& context)
             options.verify = false; // No need to verify, assuming verified earlier in VerifyWallets()
             bilingual_str error;
             std::vector<bilingual_str> warnings;
-            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error);
+            std::unique_ptr<WalletDatabase> database = MakeWalletDatabase(name, options, status, error, *context.args);
             if (!database && status == DatabaseStatus::FAILED_NOT_FOUND) {
                 continue;
             }

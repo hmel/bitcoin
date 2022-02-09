@@ -23,6 +23,10 @@ namespace node {
 struct NodeContext;
 } // namespace node
 
+namespace fs {
+class path;
+} // namespace fs
+
 /** Interrupt threads */
 void Interrupt(node::NodeContext& node);
 void Shutdown(node::NodeContext& node);
@@ -41,19 +45,19 @@ bool AppInitBasicSetup(const ArgsManager& args);
  * @note This can be done before daemonization. Do not call Shutdown() if this function fails.
  * @pre Parameters should be parsed and config file should be read, AppInitBasicSetup should have been called.
  */
-bool AppInitParameterInteraction(const ArgsManager& args);
+bool AppInitParameterInteraction(ArgsManager& args);
 /**
  * Initialization sanity checks: ecc init, sanity checks, dir lock.
  * @note This can be done before daemonization. Do not call Shutdown() if this function fails.
  * @pre Parameters should be parsed and config file should be read, AppInitParameterInteraction should have been called.
  */
-bool AppInitSanityChecks();
+bool AppInitSanityChecks(const fs::path& data_dir_net);
 /**
  * Lock bitcoin core data directory.
  * @note This should only be done after daemonization. Do not call Shutdown() if this function fails.
  * @pre Parameters should be parsed and config file should be read, AppInitSanityChecks should have been called.
  */
-bool AppInitLockDataDirectory();
+bool AppInitLockDataDirectory(const fs::path& data_dir_net);
 /**
  * Initialize node and wallet interface pointers. Has no prerequisites or side effects besides allocating memory.
  */

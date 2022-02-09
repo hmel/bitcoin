@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <fs.h>
 #include <streams.h>
 #include <util/translation.h>
@@ -23,14 +24,14 @@ static bool KeyFilter(const std::string& type)
     return WalletBatch::IsKeyType(type) || type == DBKeys::HDCHAIN;
 }
 
-bool RecoverDatabaseFile(const fs::path& file_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
+bool RecoverDatabaseFile(const fs::path& file_path, bilingual_str& error, std::vector<bilingual_str>& warnings, const ArgsManager& args)
 {
     DatabaseOptions options;
     DatabaseStatus status;
     options.require_existing = true;
     options.verify = false;
     options.require_format = DatabaseFormat::BERKELEY;
-    std::unique_ptr<WalletDatabase> database = MakeDatabase(file_path, options, status, error);
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(file_path, options, status, error, args);
     if (!database) return false;
 
     BerkeleyDatabase& berkeley_database = static_cast<BerkeleyDatabase&>(*database);
@@ -134,7 +135,7 @@ bool RecoverDatabaseFile(const fs::path& file_path, bilingual_str& error, std::v
     }
 
     DbTxn* ptxn = env->TxnBegin();
-    CWallet dummyWallet(nullptr, "", gArgs, CreateDummyWalletDatabase());
+    CWallet dummyWallet(nullptr, "", args, CreateDummyWalletDatabase());
     for (KeyValPair& row : salvagedData)
     {
         /* Filter for only private key type KV pairs to be added to the salvaged wallet */

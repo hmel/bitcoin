@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <external_signer.h>
 #include <wallet/external_signer_scriptpubkeyman.h>
@@ -39,8 +40,8 @@ bool ExternalSignerScriptPubKeyMan::SetupDescriptor(std::unique_ptr<Descriptor> 
     return true;
 }
 
-ExternalSigner ExternalSignerScriptPubKeyMan::GetExternalSigner() {
-    const std::string command = gArgs.GetArg("-signer", "");
+ExternalSigner ExternalSignerScriptPubKeyMan::GetExternalSigner(const ArgsManager& args) {
+    const std::string command = args.GetArg("-signer", "");
     if (command == "") throw std::runtime_error(std::string(__func__) + ": restart bitcoind with -signer=<cmd>");
     std::vector<ExternalSigner> signers;
     ExternalSigner::Enumerate(command, signers, Params().NetworkIDString());
@@ -76,7 +77,7 @@ TransactionError ExternalSignerScriptPubKeyMan::FillPSBT(PartiallySignedTransact
     if (complete) return TransactionError::OK;
 
     std::string strFailReason;
-    if(!GetExternalSigner().SignTransaction(psbt, strFailReason)) {
+    if(!GetExternalSigner(m_args).SignTransaction(psbt, strFailReason)) {
         tfm::format(std::cerr, "Failed to sign: %s\n", strFailReason);
         return TransactionError::EXTERNAL_SIGNER_FAILED;
     }

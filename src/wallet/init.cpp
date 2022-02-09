@@ -36,10 +36,11 @@ public:
     void AddWalletOptions(ArgsManager& argsman) const override;
 
     //! Wallets parameter interaction
-    bool ParameterInteraction() const override;
+    bool ParameterInteraction(ArgsManager& argsman) const override;
 
     //! Add wallets that should be opened to list of chain clients.
     void Construct(NodeContext& node) const override;
+
 };
 
 void WalletInit::AddWalletOptions(ArgsManager& argsman) const
@@ -98,30 +99,30 @@ void WalletInit::AddWalletOptions(ArgsManager& argsman) const
     argsman.AddHiddenArgs({"-zapwallettxes"});
 }
 
-bool WalletInit::ParameterInteraction() const
+bool WalletInit::ParameterInteraction(ArgsManager& argsman) const
 {
 #ifdef USE_BDB
      if (!BerkeleyDatabaseSanityCheck()) {
          return InitError(Untranslated("A version conflict was detected between the run-time BerkeleyDB library and the one used during compilation."));
      }
 #endif
-    if (gArgs.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
-        for (const std::string& wallet : gArgs.GetArgs("-wallet")) {
+    if (argsman.GetBoolArg("-disablewallet", DEFAULT_DISABLE_WALLET)) {
+        for (const std::string& wallet : argsman.GetArgs("-wallet")) {
             LogPrintf("%s: parameter interaction: -disablewallet -> ignoring -wallet=%s\n", __func__, wallet);
         }
 
         return true;
     }
 
-    if (gArgs.GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY) && gArgs.SoftSetBoolArg("-walletbroadcast", false)) {
+    if (argsman.GetBoolArg("-blocksonly", DEFAULT_BLOCKSONLY) && argsman.SoftSetBoolArg("-walletbroadcast", false)) {
         LogPrintf("%s: parameter interaction: -blocksonly=1 -> setting -walletbroadcast=0\n", __func__);
     }
 
-    if (gArgs.IsArgSet("-zapwallettxes")) {
+    if (argsman.IsArgSet("-zapwallettxes")) {
         return InitError(Untranslated("-zapwallettxes has been removed. If you are attempting to remove a stuck transaction from your wallet, please use abandontransaction instead."));
     }
 
-    if (gArgs.GetBoolArg("-sysperms", false))
+    if (argsman.GetBoolArg("-sysperms", false))
         return InitError(Untranslated("-sysperms is not allowed in combination with enabled wallet functionality"));
 
     return true;

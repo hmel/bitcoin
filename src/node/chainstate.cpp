@@ -38,7 +38,7 @@ std::optional<ChainstateLoadingError> LoadChainstate(bool fReset,
     // new CBlockTreeDB tries to delete the existing file, which
     // fails if it's still open from the previous loop. Close it first:
     pblocktree.reset();
-    pblocktree.reset(new CBlockTreeDB(nBlockTreeDBCache, block_tree_db_in_memory, fReset));
+    pblocktree.reset(new CBlockTreeDB(chainman.m_blockman.args().GetDataDirNet(), nBlockTreeDBCache, block_tree_db_in_memory, fReset));
 
     if (fReset) {
         pblocktree->WriteReindexing(true);

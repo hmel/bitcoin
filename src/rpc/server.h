@@ -6,6 +6,7 @@
 #ifndef BITCOIN_RPC_SERVER_H
 #define BITCOIN_RPC_SERVER_H
 
+#include "util/system.h"
 #include <rpc/request.h>
 #include <rpc/util.h>
 
@@ -171,7 +172,7 @@ extern CRPCTable tableRPC;
 
 void StartRPC();
 void InterruptRPC();
-void StopRPC();
+void StopRPC(const ArgsManager& args);
 std::string JSONRPCExecBatch(const JSONRPCRequest& jreq, const UniValue& vReq);
 
 // Retrieves any serialization flags requested in command line argument

@@ -22,7 +22,7 @@ uint32_t DUMP_VERSION = 1;
 bool DumpWallet(CWallet& wallet, bilingual_str& error)
 {
     // Get the dumpfile
-    std::string dump_filename = gArgs.GetArg("-dumpfile", "");
+    std::string dump_filename = wallet.args().GetArg("-dumpfile", "");
     if (dump_filename.empty()) {
         error = _("No dump file provided. To use dump, -dumpfile=<filename> must be provided.");
         return false;
@@ -114,10 +114,10 @@ static void WalletToolReleaseWallet(CWallet* wallet)
     delete wallet;
 }
 
-bool CreateFromDump(const std::string& name, const fs::path& wallet_path, bilingual_str& error, std::vector<bilingual_str>& warnings)
+bool CreateFromDump(const std::string& name, const fs::path& wallet_path, const ArgsManager& args, bilingual_str& error, std::vector<bilingual_str>& warnings)
 {
     // Get the dumpfile
-    std::string dump_filename = gArgs.GetArg("-dumpfile", "");
+    std::string dump_filename = args.GetArg("-dumpfile", "");
     if (dump_filename.empty()) {
         error = _("No dump file provided. To use createfromdump, -dumpfile=<filename> must be provided.");
         return false;
@@ -171,7 +171,7 @@ bool CreateFromDump(const std::string& name, const fs::path& wallet_path, biling
         return false;
     }
     // Get the data file format with format_value as the default
-    std::string file_format = gArgs.GetArg("-format", format_value);
+    std::string file_format = args.GetArg("-format", format_value);
     if (file_format.empty()) {
         error = _("No wallet file format provided. To use createfromdump, -format=<format> must be provided.");
         return false;
@@ -195,12 +195,12 @@ bool CreateFromDump(const std::string& name, const fs::path& wallet_path, biling
     DatabaseStatus status;
     options.require_create = true;
     options.require_format = data_format;
-    std::unique_ptr<WalletDatabase> database = MakeDatabase(wallet_path, options, status, error);
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(wallet_path, options, status, error, args);
     if (!database) return false;
 
     // dummy chain interface
     bool ret = true;
-    std::shared_ptr<CWallet> wallet(new CWallet(nullptr /* chain */, name, gArgs, std::move(database)), WalletToolReleaseWallet);
+    std::shared_ptr<CWallet> wallet(new CWallet(nullptr /* chain */, name, args, std::move(database)), WalletToolReleaseWallet);
     {
         LOCK(wallet->cs_wallet);
         DBErrors load_wallet_ret = wallet->LoadWallet();

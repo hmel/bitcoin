@@ -8,7 +8,7 @@
 #include <util/system.h>
 
 namespace wallet {
-fs::path GetWalletDir()
+fs::path GetWalletDir(const ArgsManager& args)
 {
     fs::path path;
 

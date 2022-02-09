@@ -62,7 +62,8 @@ struct CoinEntry {
 
 }
 
-CCoinsViewDB::CCoinsViewDB(fs::path ldb_path, size_t nCacheSize, bool fMemory, bool fWipe) :
+CCoinsViewDB::CCoinsViewDB(const ArgsManager& args, fs::path ldb_path, size_t nCacheSize, bool fMemory, bool fWipe) :
+    m_args(args),
     m_db(std::make_unique<CDBWrapper>(ldb_path, nCacheSize, fMemory, fWipe, true)),
     m_ldb_path(ldb_path),
     m_is_memory(fMemory) { }
@@ -107,8 +108,8 @@ bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
     CDBBatch batch(*m_db);
     size_t count = 0;
     size_t changed = 0;
-    size_t batch_size = (size_t)gArgs.GetIntArg("-dbbatchsize", nDefaultDbBatchSize);
-    int crash_simulate = gArgs.GetIntArg("-dbcrashratio", 0);
+    size_t batch_size = (size_t)m_args.GetIntArg("-dbbatchsize", nDefaultDbBatchSize);
+    int crash_simulate = m_args.GetIntArg("-dbcrashratio", 0);
     assert(!hashBlock.IsNull());
 
     uint256 old_tip = GetBestBlock();
@@ -169,7 +170,7 @@ size_t CCoinsViewDB::EstimateSize() const
     return m_db->EstimateSize(DB_COIN, uint8_t(DB_COIN + 1));
 }
 
-CBlockTreeDB::CBlockTreeDB(size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(gArgs.GetDataDirNet() / "blocks" / "index", nCacheSize, fMemory, fWipe) {
+CBlockTreeDB::CBlockTreeDB(const fs::path& data_dir_net, size_t nCacheSize, bool fMemory, bool fWipe) : CDBWrapper(data_dir_net / "blocks" / "index", nCacheSize, fMemory, fWipe) {
 }
 
 bool CBlockTreeDB::ReadBlockFileInfo(int nFile, CBlockFileInfo &info) {

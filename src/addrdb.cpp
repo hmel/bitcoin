@@ -45,7 +45,7 @@ bool SerializeDB(Stream& stream, const Data& data)
 }
 
 template <typename Data>
-bool SerializeFileDB(const std::string& prefix, const fs::path& path, const Data& data, int version)
+bool SerializeFileDB(const std::string& prefix, const fs::path& data_dir, const fs::path& path, const Data& data, int version)
 {
     // Generate random temporary filename
     uint16_t randv = 0;
@@ -53,7 +53,7 @@ bool SerializeFileDB(const std::string& prefix, const fs::path& path, const Data
     std::string tmpfn = strprintf("%s.%04x", prefix, randv);
 
     // open temp output file, and associate with CAutoFile
-    fs::path pathTmp = gArgs.GetDataDirNet() / tmpfn;
+    fs::path pathTmp = data_dir / tmpfn;
     FILE *file = fsbridge::fopen(pathTmp, "wb");
     CAutoFile fileout(file, SER_DISK, version);
     if (fileout.IsNull()) {
@@ -174,7 +174,7 @@ bool CBanDB::Read(banmap_t& banSet)
 bool DumpPeerAddresses(const ArgsManager& args, const AddrMan& addr)
 {
     const auto pathAddr = args.GetDataDirNet() / "peers.dat";
-    return SerializeFileDB("peers", pathAddr, addr, CLIENT_VERSION);
+    return SerializeFileDB("peers", args.GetDataDirNet(), pathAddr, addr, CLIENT_VERSION);
 }
 
 void ReadFromStream(AddrMan& addr, CDataStream& ssPeers)
@@ -205,10 +205,10 @@ std::optional<bilingual_str> LoadAddrman(const std::vector<bool>& asmap, const A
     return std::nullopt;
 }
 
-void DumpAnchors(const fs::path& anchors_db_path, const std::vector<CAddress>& anchors)
+void DumpAnchors(const fs::path& anchors_db_path, const std::vector<CAddress>& anchors, const ArgsManager& args)
 {
     LOG_TIME_SECONDS(strprintf("Flush %d outbound block-relay-only peer addresses to anchors.dat", anchors.size()));
-    SerializeFileDB("anchors", anchors_db_path, anchors, CLIENT_VERSION | ADDRV2_FORMAT);
+    SerializeFileDB("anchors", args.GetDataDirNet(), anchors_db_path, anchors, CLIENT_VERSION | ADDRV2_FORMAT);
 }
 
 std::vector<CAddress> ReadAnchors(const fs::path& anchors_db_path)

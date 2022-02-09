@@ -56,7 +56,7 @@ std::optional<bilingual_str> LoadAddrman(const std::vector<bool>& asmap, const A
  * Anchors are last known outgoing block-relay-only peers that are
  * tried to re-connect to on startup.
  */
-void DumpAnchors(const fs::path& anchors_db_path, const std::vector<CAddress>& anchors);
+void DumpAnchors(const fs::path& anchors_db_path, const std::vector<CAddress>& anchors, const ArgsManager& args);
 
 /**
  * Read the anchor IP address database (anchors.dat)

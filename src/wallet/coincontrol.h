@@ -18,6 +18,9 @@
 #include <map>
 #include <set>
 
+
+class ArgsManager;
+
 namespace wallet {
 const int DEFAULT_MIN_DEPTH = 0;
 const int DEFAULT_MAX_DEPTH = 9999999;
@@ -62,7 +65,7 @@ public:
     //! SigningProvider that has pubkeys and scripts to do spend size estimation for external inputs
     FlatSigningProvider m_external_provider;
 
-    CCoinControl();
+    CCoinControl(const ArgsManager& args);
 
     bool HasSelected() const
     {

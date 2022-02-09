@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <dbwrapper.h>
 
 #include <memory>
@@ -114,7 +115,7 @@ static leveldb::Options GetOptions(size_t nCacheSize)
     return options;
 }
 
-CDBWrapper::CDBWrapper(const fs::path& path, size_t nCacheSize, bool fMemory, bool fWipe, bool obfuscate)
+CDBWrapper::CDBWrapper(const fs::path& path, bool force_compact_db, size_t nCacheSize, bool fMemory, bool fWipe, bool obfuscate)
     : m_name{fs::PathToString(path.stem())}
 {
     penv = nullptr;
@@ -144,7 +145,8 @@ CDBWrapper::CDBWrapper(const fs::path& path, size_t nCacheSize, bool fMemory, bo
     dbwrapper_private::HandleError(status);
     LogPrintf("Opened LevelDB successfully\n");
 
-    if (gArgs.GetBoolArg("-forcecompactdb", false)) {
+    //if (gArgs.GetBoolArg("-forcecompactdb", false)) {
+    if (force_compact_db) {
         LogPrintf("Starting database compaction of %s\n", fs::PathToString(path));
         pdb->CompactRange(nullptr, nullptr);
         LogPrintf("Finished database compaction of %s\n", fs::PathToString(path));

@@ -73,7 +73,7 @@ class BlockManager
 private:
     void FlushBlockFile(bool fFinalize = false, bool finalize_undo = false);
     void FlushUndoFile(int block_file, bool finalize = false);
-    bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, CChain& active_chain, uint64_t nTime, bool fKnown);
+    bool FindBlockPos(FlatFilePos& pos, unsigned int nAddSize, unsigned int nHeight, CChain& active_chain, uint64_t nTime, bool fKnown, bool fastprune);
     bool FindUndoPos(BlockValidationState& state, int nFile, FlatFilePos& pos, unsigned int nAddSize);
 
     /* Calculate the block/rev files to delete based on height specified by user with RPC command pruneblockchain */
@@ -110,6 +110,8 @@ private:
 
     /** Dirty block file entries. */
     std::set<int> m_dirty_fileinfo;
+
+    const ArgsManager& m_args;
 
 public:
     BlockMap m_block_index GUARDED_BY(cs_main);
@@ -160,6 +162,10 @@ public:
     //! Returns last CBlockIndex* that is a checkpoint
     CBlockIndex* GetLastCheckpoint(const CCheckpointData& data) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
+    const ArgsManager& args() const { return m_args; }
+
+    BlockManager(const ArgsManager& args) : m_args(args) {}
+
     ~BlockManager()
     {
         Unload();
@@ -172,7 +178,7 @@ bool IsBlockPruned(const CBlockIndex* pblockindex) EXCLUSIVE_LOCKS_REQUIRED(::cs
 void CleanupBlockRevFiles();
 
 /** Open a block file (blk?????.dat) */
-FILE* OpenBlockFile(const FlatFilePos& pos, bool fReadOnly = false);
+FILE* OpenBlockFile(const FlatFilePos& pos, const fs::path& blocks_dir, bool fastprune, bool fReadOnly = false);
 /** Translation to a filesystem path */
 fs::path GetBlockPosFilename(const FlatFilePos& pos);
 

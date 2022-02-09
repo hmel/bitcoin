@@ -239,22 +239,22 @@ static bool HTTPReq_JSONRPC(const std::any& context, HTTPRequest* req)
     return true;
 }
 
-static bool InitRPCAuthentication()
+static bool InitRPCAuthentication(const ArgsManager& args)
 {
-    if (gArgs.GetArg("-rpcpassword", "") == "")
+    if (args.GetArg("-rpcpassword", "") == "")
     {
         LogPrintf("Using random cookie authentication.\n");
-        if (!GenerateAuthCookie(&strRPCUserColonPass)) {
+        if (!GenerateAuthCookie(args, &strRPCUserColonPass)) {
             return false;
         }
     } else {
         LogPrintf("Config options rpcuser and rpcpassword will soon be deprecated. Locally-run instances may remove rpcuser to use cookie-based auth, or may be replaced with rpcauth. Please see share/rpcauth for rpcauth auth generation.\n");
-        strRPCUserColonPass = gArgs.GetArg("-rpcuser", "") + ":" + gArgs.GetArg("-rpcpassword", "");
+        strRPCUserColonPass = args.GetArg("-rpcuser", "") + ":" + args.GetArg("-rpcpassword", "");
     }
-    if (gArgs.GetArg("-rpcauth","") != "")
+    if (args.GetArg("-rpcauth","") != "")
     {
         LogPrintf("Using rpcauth authentication.\n");
-        for (const std::string& rpcauth : gArgs.GetArgs("-rpcauth")) {
+        for (const std::string& rpcauth : args.GetArgs("-rpcauth")) {
             std::vector<std::string> fields;
             boost::split(fields, rpcauth, boost::is_any_of(":$"));
             if (fields.size() == 3) {
@@ -266,8 +266,8 @@ static bool InitRPCAuthentication()
         }
     }
 
-    g_rpc_whitelist_default = gArgs.GetBoolArg("-rpcwhitelistdefault", gArgs.IsArgSet("-rpcwhitelist"));
-    for (const std::string& strRPCWhitelist : gArgs.GetArgs("-rpcwhitelist")) {
+    g_rpc_whitelist_default = args.GetBoolArg("-rpcwhitelistdefault", args.IsArgSet("-rpcwhitelist"));
+    for (const std::string& strRPCWhitelist : args.GetArgs("-rpcwhitelist")) {
         auto pos = strRPCWhitelist.find(':');
         std::string strUser = strRPCWhitelist.substr(0, pos);
         bool intersect = g_rpc_whitelist.count(strUser);
@@ -289,10 +289,10 @@ static bool InitRPCAuthentication()
     return true;
 }
 
-bool StartHTTPRPC(const std::any& context)
+bool StartHTTPRPC(const std::any& context, const ArgsManager& args)
 {
     LogPrint(BCLog::RPC, "Starting HTTP RPC server\n");
-    if (!InitRPCAuthentication())
+    if (!InitRPCAuthentication(args))
         return false;
 
     auto handle_rpc = [context](HTTPRequest* req, const std::string&) { return HTTPReq_JSONRPC(context, req); };

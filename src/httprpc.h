@@ -5,12 +5,15 @@
 #ifndef BITCOIN_HTTPRPC_H
 #define BITCOIN_HTTPRPC_H
 
+#include "util/system.h"
 #include <any>
+
+class ArgsManager;
 
 /** Start HTTP RPC subsystem.
  * Precondition; HTTP and RPC has been started.
  */
-bool StartHTTPRPC(const std::any& context);
+bool StartHTTPRPC(const std::any& context, const ArgsManager& args);
 /** Interrupt HTTP RPC subsystem.
  */
 void InterruptHTTPRPC();

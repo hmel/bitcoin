@@ -5,19 +5,22 @@
 #ifndef BITCOIN_WALLET_EXTERNAL_SIGNER_SCRIPTPUBKEYMAN_H
 #define BITCOIN_WALLET_EXTERNAL_SIGNER_SCRIPTPUBKEYMAN_H
 
+#include "util/system.h"
 #include <wallet/scriptpubkeyman.h>
 
 #include <memory>
+
+class ArgsManager;
 
 namespace wallet {
 class ExternalSignerScriptPubKeyMan : public DescriptorScriptPubKeyMan
 {
   public:
-  ExternalSignerScriptPubKeyMan(WalletStorage& storage, WalletDescriptor& descriptor)
-      :   DescriptorScriptPubKeyMan(storage, descriptor)
+    ExternalSignerScriptPubKeyMan(WalletStorage& storage, WalletDescriptor& descriptor, const ArgsManager& args)
+            :   DescriptorScriptPubKeyMan(storage, descriptor, args)
       {}
-  ExternalSignerScriptPubKeyMan(WalletStorage& storage)
-      :   DescriptorScriptPubKeyMan(storage)
+    ExternalSignerScriptPubKeyMan(WalletStorage& storage, const ArgsManager& args)
+            : DescriptorScriptPubKeyMan(storage, args)
       {}
 
   /** Provide a descriptor at setup time
@@ -25,7 +28,7 @@ class ExternalSignerScriptPubKeyMan : public DescriptorScriptPubKeyMan
   */
   bool SetupDescriptor(std::unique_ptr<Descriptor>desc);
 
-  static ExternalSigner GetExternalSigner();
+  static ExternalSigner GetExternalSigner(const ArgsManager& args);
 
   bool DisplayAddress(const CScript scriptPubKey, const ExternalSigner &signer) const;
 

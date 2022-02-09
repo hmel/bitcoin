@@ -6,6 +6,7 @@
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <common/bloom.h>
 #include <compat.h>
@@ -183,7 +184,7 @@ enum class ConnectionType {
 /** Convert ConnectionType enum to a string value */
 std::string ConnectionTypeAsString(ConnectionType conn_type);
 void Discover();
-uint16_t GetListenPort();
+uint16_t GetListenPort(const ArgsManager& args);
 
 enum
 {
@@ -198,7 +199,7 @@ enum
 
 bool IsPeerAddrLocalGood(CNode *pnode);
 /** Returns a local address that we should advertise to this peer */
-std::optional<CAddress> GetLocalAddrForPeer(CNode *pnode);
+std::optional<CAddress> GetLocalAddrForPeer(CNode *pnode, const ArgsManager& args);
 
 /**
  * Mark a network as reachable or unreachable (no automatic connects to it)
@@ -211,12 +212,12 @@ bool IsReachable(enum Network net);
 bool IsReachable(const CNetAddr& addr);
 
 bool AddLocal(const CService& addr, int nScore = LOCAL_NONE);
-bool AddLocal(const CNetAddr& addr, int nScore = LOCAL_NONE);
+bool AddLocal(const CNetAddr& addr, uint16_t port, int nScore = LOCAL_NONE);
 void RemoveLocal(const CService& addr);
 bool SeenLocal(const CService& addr);
 bool IsLocal(const CService& addr);
 bool GetLocal(CService &addr, const CNetAddr *paddrPeer = nullptr);
-CAddress GetLocalAddress(const CNetAddr *paddrPeer, ServiceFlags nLocalServices);
+CAddress GetLocalAddress(const CNetAddr *paddrPeer, ServiceFlags nLocalServices, const ArgsManager& args);
 
 
 extern bool fDiscover;
@@ -807,7 +808,7 @@ public:
         m_onion_binds = connOptions.onion_binds;
     }
 
-    CConnman(uint64_t seed0, uint64_t seed1, AddrMan& addrman, bool network_active = true);
+    CConnman(uint64_t seed0, uint64_t seed1, AddrMan& addrman, const ArgsManager& args, bool network_active = true);
     ~CConnman();
     bool Start(CScheduler& scheduler, const Options& options);
 
@@ -947,6 +948,8 @@ public:
 
     /** Return true if we should disconnect the peer for failing an inactivity check. */
     bool ShouldRunInactivityChecks(const CNode& node, std::chrono::seconds now) const;
+
+    const ArgsManager& args() const { return m_args; }
 
 private:
     struct ListenSocket {
@@ -1105,6 +1108,7 @@ private:
     std::atomic<bool> fNetworkActive{true};
     bool fAddressesInitialized{false};
     AddrMan& addrman;
+    const ArgsManager& m_args;
     std::deque<std::string> m_addr_fetches GUARDED_BY(m_addr_fetches_mutex);
     Mutex m_addr_fetches_mutex;
     std::vector<std::string> m_added_nodes GUARDED_BY(m_added_nodes_mutex);
@@ -1272,7 +1276,7 @@ private:
 };
 
 /** Dump binary message to file, with timestamp */
-void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming);
+void CaptureMessage(const CAddress& addr, const std::string& msg_type, const Span<const unsigned char>& data, bool is_incoming, const fs::path& data_dir_net);
 
 struct NodeEvictionCandidate
 {

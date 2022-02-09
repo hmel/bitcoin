@@ -35,6 +35,7 @@
 #include <vector>
 
 class UniValue;
+class ArgsManager;
 
 // Application startup time (used for uptime calculation)
 int64_t GetStartupTime();
@@ -97,8 +98,8 @@ void ReleaseDirectoryLocks();
 bool TryCreateDirectories(const fs::path& p);
 fs::path GetDefaultDataDir();
 // Return true if -datadir option points to a valid directory or is not specified.
-bool CheckDataDirOption();
-fs::path GetConfigFile(const std::string& confPath);
+bool CheckDataDirOption(const ArgsManager& args);
+fs::path GetConfigFile(const std::string& confPath, const ArgsManager& args);
 #ifdef WIN32
 fs::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
@@ -125,7 +126,7 @@ UniValue RunCommandParseJSON(const std::string& str_command, const std::string& 
  * @param net_specific Use network specific datadir variant
  * @return The normalized path.
  */
-fs::path AbsPathForConfigVal(const fs::path& path, bool net_specific = true);
+fs::path AbsPathForConfigVal(const fs::path& path, const ArgsManager& args, bool net_specific = true);
 
 inline bool IsSwitchChar(char c)
 {
@@ -479,7 +480,7 @@ private:
         const std::map<std::string, std::vector<util::SettingsValue>>& args) const;
 };
 
-extern ArgsManager gArgs;
+//extern ArgsManager gArgs;
 
 /**
  * @return true if help has been requested via a command-line arg

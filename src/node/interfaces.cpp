@@ -90,8 +90,8 @@ public:
     uint32_t getLogCategories() override { return LogInstance().GetCategoryMask(); }
     bool baseInitialize() override
     {
-        return AppInitBasicSetup(gArgs) && AppInitParameterInteraction(gArgs) && AppInitSanityChecks() &&
-               AppInitLockDataDirectory() && AppInitInterfaces(*m_context);
+        return AppInitBasicSetup(*m_context->args) && AppInitParameterInteraction(*m_context->args) && AppInitSanityChecks(m_context->args->GetDataDirNet()) &&
+               AppInitLockDataDirectory(m_context->args->GetDataDirNet()) && AppInitInterfaces(*m_context);
     }
     bool appInitMain(interfaces::BlockAndHeaderTipInfo* tip_info) override
     {
@@ -106,9 +106,9 @@ public:
     {
         StartShutdown();
         // Stop RPC for clean shutdown if any of waitfor* commands is executed.
-        if (gArgs.GetBoolArg("-server", false)) {
+        if (m_context->connman->args().GetBoolArg("-server", false)) {
             InterruptRPC();
-            StopRPC();
+            StopRPC(m_context->connman->args());
         }
     }
     bool shutdownRequested() override { return ShutdownRequested(); }
@@ -187,7 +187,7 @@ public:
     {
 #ifdef ENABLE_EXTERNAL_SIGNER
         std::vector<ExternalSigner> signers = {};
-        const std::string command = gArgs.GetArg("-signer", "");
+        const std::string command = m_context->connman->args().GetArg("-signer", "");
         if (command == "") return {};
         ExternalSigner::Enumerate(command, signers, Params().NetworkIDString());
         std::vector<std::unique_ptr<interfaces::ExternalSigner>> result;
@@ -604,8 +604,8 @@ public:
     }
     void getPackageLimits(unsigned int& limit_ancestor_count, unsigned int& limit_descendant_count) override
     {
-        limit_ancestor_count = gArgs.GetIntArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT);
-        limit_descendant_count = gArgs.GetIntArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT);
+        limit_ancestor_count = m_node.args->GetIntArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT);
+        limit_descendant_count = m_node.args->GetIntArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT);
     }
     bool checkChainLimits(const CTransactionRef& tx) override
     {
@@ -613,10 +613,10 @@ public:
         LockPoints lp;
         CTxMemPoolEntry entry(tx, 0, 0, 0, false, 0, lp);
         CTxMemPool::setEntries ancestors;
-        auto limit_ancestor_count = gArgs.GetIntArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT);
-        auto limit_ancestor_size = gArgs.GetIntArg("-limitancestorsize", DEFAULT_ANCESTOR_SIZE_LIMIT) * 1000;
-        auto limit_descendant_count = gArgs.GetIntArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT);
-        auto limit_descendant_size = gArgs.GetIntArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT) * 1000;
+        auto limit_ancestor_count = m_node.args->GetIntArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT);
+        auto limit_ancestor_size = m_node.args->GetIntArg("-limitancestorsize", DEFAULT_ANCESTOR_SIZE_LIMIT) * 1000;
+        auto limit_descendant_count = m_node.args->GetIntArg("-limitdescendantcount", DEFAULT_DESCENDANT_LIMIT);
+        auto limit_descendant_size = m_node.args->GetIntArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT) * 1000;
         std::string unused_error_string;
         LOCK(m_node.mempool->cs);
         return m_node.mempool->CalculateMemPoolAncestors(
@@ -636,7 +636,7 @@ public:
     CFeeRate mempoolMinFee() override
     {
         if (!m_node.mempool) return {};
-        return m_node.mempool->GetMinFee(gArgs.GetIntArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000);
+        return m_node.mempool->GetMinFee(m_node.args->GetIntArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000);
     }
     CFeeRate relayMinFee() override { return ::minRelayTxFee; }
     CFeeRate relayIncrementalFee() override { return ::incrementalRelayFee; }
@@ -683,16 +683,16 @@ public:
     int rpcSerializationFlags() override { return RPCSerializationFlags(); }
     util::SettingsValue getSetting(const std::string& name) override
     {
-        return gArgs.GetSetting(name);
+        return m_node.args->GetSetting(name);
     }
     std::vector<util::SettingsValue> getSettingsList(const std::string& name) override
     {
-        return gArgs.GetSettingsList(name);
+        return m_node.args->GetSettingsList(name);
     }
     util::SettingsValue getRwSetting(const std::string& name) override
     {
         util::SettingsValue result;
-        gArgs.LockSettings([&](const util::Settings& settings) {
+        m_node.args->LockSettings([&](const util::Settings& settings) {
             if (const util::SettingsValue* value = util::FindKey(settings.rw_settings, name)) {
                 result = *value;
             }
@@ -701,14 +701,14 @@ public:
     }
     bool updateRwSetting(const std::string& name, const util::SettingsValue& value, bool write) override
     {
-        gArgs.LockSettings([&](util::Settings& settings) {
+        m_node.args->LockSettings([&](util::Settings& settings) {
             if (value.isNull()) {
                 settings.rw_settings.erase(name);
             } else {
                 settings.rw_settings[name] = value;
             }
         });
-        return !write || gArgs.WriteSettingsFile();
+        return !write || m_node.args->WriteSettingsFile();
     }
     void requestMempoolTransactions(Notifications& notifications) override
     {

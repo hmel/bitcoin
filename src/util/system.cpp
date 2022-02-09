@@ -84,7 +84,7 @@ const int64_t nStartupTime = GetTime();
 const char * const BITCOIN_CONF_FILENAME = "bitcoin.conf";
 const char * const BITCOIN_SETTINGS_FILENAME = "settings.json";
 
-ArgsManager gArgs;
+//ArgsManager gArgs;
 
 /** Mutex to protect dir_locks. */
 static Mutex cs_dir_locks;
@@ -808,15 +808,15 @@ fs::path GetDefaultDataDir()
 #endif
 }
 
-bool CheckDataDirOption()
+bool CheckDataDirOption(const ArgsManager& args)
 {
     const fs::path datadir{gArgs.GetPathArg("-datadir")};
     return datadir.empty() || fs::is_directory(fs::absolute(datadir));
 }
 
-fs::path GetConfigFile(const std::string& confPath)
+fs::path GetConfigFile(const std::string& confPath, const ArgsManager& args)
 {
-    return AbsPathForConfigVal(fs::PathFromString(confPath), false);
+    return AbsPathForConfigVal(fs::PathFromString(confPath), args, false);
 }
 
 static bool GetConfigOptions(std::istream& stream, const std::string& filepath, std::string& error, std::vector<std::pair<std::string, std::string>>& options, std::list<SectionInfo>& sections)
@@ -901,7 +901,7 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
     }
 
     const std::string confPath = GetArg("-conf", BITCOIN_CONF_FILENAME);
-    std::ifstream stream{GetConfigFile(confPath)};
+    std::ifstream stream{GetConfigFile(confPath, *this)};
 
     // not ok to have a config file specified that cannot be opened
     if (IsArgSet("-conf") && !stream.good()) {
@@ -948,7 +948,7 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
             const size_t default_includes = add_includes({});
 
             for (const std::string& conf_file_name : conf_file_names) {
-                std::ifstream conf_file_stream{GetConfigFile(conf_file_name)};
+                std::ifstream conf_file_stream(GetConfigFile(conf_file_name, *this));
                 if (conf_file_stream.good()) {
                     if (!ReadConfigStream(conf_file_stream, conf_file_name, error, ignore_invalid_keys)) {
                         return false;
@@ -977,7 +977,7 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
 
     // If datadir is changed in .conf file:
     gArgs.ClearPathCache();
-    if (!CheckDataDirOption()) {
+    if (!CheckDataDirOption(*this)) {
         error = strprintf("specified data directory \"%s\" does not exist.", GetArg("-datadir", ""));
         return false;
     }

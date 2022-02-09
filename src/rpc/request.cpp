@@ -12,11 +12,6 @@
 #include <util/system.h>
 #include <util/strencodings.h>
 
-#include <fstream>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
 /**
  * JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
  * but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
@@ -69,16 +64,16 @@ static const std::string COOKIEAUTH_USER = "__cookie__";
 static const std::string COOKIEAUTH_FILE = ".cookie";
 
 /** Get name of RPC authentication cookie file */
-static fs::path GetAuthCookieFile(bool temp=false)
+static fs::path GetAuthCookieFile(const ArgsManager& args, bool temp=false)
 {
-    std::string arg = gArgs.GetArg("-rpccookiefile", COOKIEAUTH_FILE);
+    std::string arg = args.GetArg("-rpccookiefile", COOKIEAUTH_FILE);
     if (temp) {
         arg += ".tmp";
     }
-    return AbsPathForConfigVal(fs::PathFromString(arg));
+    return AbsPathForConfigVal(fs::PathFromString(arg), args);
 }
 
-bool GenerateAuthCookie(std::string *cookie_out)
+bool GenerateAuthCookie(const ArgsManager& args, std::string* cookie_out)
 {
     const size_t COOKIE_SIZE = 32;
     unsigned char rand_pwd[COOKIE_SIZE];
@@ -98,7 +93,7 @@ bool GenerateAuthCookie(std::string *cookie_out)
     file << cookie;
     file.close();
 
-    fs::path filepath = GetAuthCookieFile(false);
+    fs::path filepath = GetAuthCookieFile(args, false);
     if (!RenameOver(filepath_tmp, filepath)) {
         LogPrintf("Unable to rename cookie authentication file %s to %s\n", fs::PathToString(filepath_tmp), fs::PathToString(filepath));
         return false;
@@ -110,11 +105,11 @@ bool GenerateAuthCookie(std::string *cookie_out)
     return true;
 }
 
-bool GetAuthCookie(std::string *cookie_out)
+bool GetAuthCookie(const ArgsManager& args, std::string *cookie_out)
 {
     std::ifstream file;
     std::string cookie;
-    fs::path filepath = GetAuthCookieFile();
+    fs::path filepath = GetAuthCookieFile(args);
     file.open(filepath);
     if (!file.is_open())
         return false;
@@ -126,10 +121,10 @@ bool GetAuthCookie(std::string *cookie_out)
     return true;
 }
 
-void DeleteAuthCookie()
+void DeleteAuthCookie(const ArgsManager& args)
 {
     try {
-        fs::remove(GetAuthCookieFile());
+        fs::remove(GetAuthCookieFile(args));
     } catch (const fs::filesystem_error& e) {
         LogPrintf("%s: Unable to remove random auth cookie file: %s\n", __func__, fsbridge::get_filesystem_error_message(e));
     }

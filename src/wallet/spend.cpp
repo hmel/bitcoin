@@ -494,7 +494,7 @@ std::optional<SelectionResult> SelectCoins(const CWallet& wallet, const std::vec
     wallet.chain().getPackageLimits(limit_ancestor_count, limit_descendant_count);
     const size_t max_ancestors = (size_t)std::max<int64_t>(1, limit_ancestor_count);
     const size_t max_descendants = (size_t)std::max<int64_t>(1, limit_descendant_count);
-    const bool fRejectLongChains = gArgs.GetBoolArg("-walletrejectlongchains", DEFAULT_WALLET_REJECT_LONG_CHAINS);
+    const bool fRejectLongChains = wallet.args().GetBoolArg("-walletrejectlongchains", DEFAULT_WALLET_REJECT_LONG_CHAINS);
 
     // form groups from remaining coins; note that preset coins will not
     // automatically have their associated (same address) coins included
@@ -904,7 +904,7 @@ static bool CreateTransactionInternal(
         return false;
     }
 
-    if (gArgs.GetBoolArg("-walletrejectlongchains", DEFAULT_WALLET_REJECT_LONG_CHAINS)) {
+    if (wallet.args().GetBoolArg("-walletrejectlongchains", DEFAULT_WALLET_REJECT_LONG_CHAINS)) {
         // Lastly, ensure this tx will pass the mempool's chain limits
         if (!wallet.chain().checkChainLimits(tx)) {
             error = _("Transaction has too long of a mempool chain");

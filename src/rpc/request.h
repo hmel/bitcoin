@@ -6,6 +6,7 @@
 #ifndef BITCOIN_RPC_REQUEST_H
 #define BITCOIN_RPC_REQUEST_H
 
+#include "util/system.h"
 #include <any>
 #include <string>
 
@@ -17,11 +18,11 @@ std::string JSONRPCReply(const UniValue& result, const UniValue& error, const Un
 UniValue JSONRPCError(int code, const std::string& message);
 
 /** Generate a new RPC authentication cookie and write it to disk */
-bool GenerateAuthCookie(std::string *cookie_out);
+bool GenerateAuthCookie(const ArgsManager& args, std::string *cookie_out);
 /** Read the RPC authentication cookie from disk */
-bool GetAuthCookie(std::string *cookie_out);
+bool GetAuthCookie(const ArgsManager& args, std::string* cookie_out);
 /** Delete RPC authentication cookie from disk */
-void DeleteAuthCookie();
+void DeleteAuthCookie(const ArgsManager& args);
 /** Parse JSON-RPC batch reply into a vector */
 std::vector<UniValue> JSONRPCProcessBatchReply(const UniValue& in);
 

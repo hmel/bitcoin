@@ -6,6 +6,7 @@
 #ifndef BITCOIN_WALLET_DB_H
 #define BITCOIN_WALLET_DB_H
 
+#include "util/system.h"
 #include <clientversion.h>
 #include <fs.h>
 #include <streams.h>
@@ -227,7 +228,7 @@ enum class DatabaseStatus {
 /** Recursively list database paths in directory. */
 std::vector<fs::path> ListDatabases(const fs::path& path);
 
-std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error);
+std::unique_ptr<WalletDatabase> MakeDatabase(const fs::path& path, const DatabaseOptions& options, DatabaseStatus& status, bilingual_str& error, const ArgsManager& args);
 
 fs::path BDBDataFile(const fs::path& path);
 fs::path SQLiteDataFile(const fs::path& path);

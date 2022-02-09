@@ -305,15 +305,15 @@ void InterruptRPC()
     });
 }
 
-void StopRPC()
+void StopRPC(const ArgsManager& args)
 {
     static std::once_flag g_rpc_stop_flag;
     // This function could be called twice if the GUI has been started with -server=1.
     assert(!g_rpc_running);
-    std::call_once(g_rpc_stop_flag, []() {
+    std::call_once(g_rpc_stop_flag, [&]() {
         LogPrint(BCLog::RPC, "Stopping RPC\n");
         WITH_LOCK(g_deadline_timers_mutex, deadlineTimers.clear());
-        DeleteAuthCookie();
+        DeleteAuthCookie(args);
         g_rpcSignals.Stopped();
     });
 }
@@ -349,9 +349,9 @@ bool RPCIsInWarmup(std::string *outStatus)
     return fRPCInWarmup;
 }
 
-bool IsDeprecatedRPCEnabled(const std::string& method)
+bool IsDeprecatedRPCEnabled(const std::string& method, const ArgsManager& args)
 {
-    const std::vector<std::string> enabled_methods = gArgs.GetArgs("-deprecatedrpc");
+    const std::vector<std::string> enabled_methods = args.GetArgs("-deprecatedrpc");
 
     return find(enabled_methods.begin(), enabled_methods.end(), method) != enabled_methods.end();
 }
@@ -537,10 +537,10 @@ void RPCRunLater(const std::string& name, std::function<void()> func, int64_t nS
     deadlineTimers.emplace(name, std::unique_ptr<RPCTimerBase>(timerInterface->NewTimer(func, nSeconds*1000)));
 }
 
-int RPCSerializationFlags()
+int RPCSerializationFlags(const ArgsManager& args)
 {
     int flag = 0;
-    if (gArgs.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) == 0)
+    if (args.GetIntArg("-rpcserialversion", DEFAULT_RPC_SERIALIZE_VERSION) == 0)
         flag |= SERIALIZE_TRANSACTION_NO_WITNESS;
     return flag;
 }

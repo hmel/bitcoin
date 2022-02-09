@@ -18,7 +18,7 @@ public:
     /** Get wallet help string */
     virtual void AddWalletOptions(ArgsManager& argsman) const = 0;
     /** Check wallet parameter interaction */
-    virtual bool ParameterInteraction() const = 0;
+    virtual bool ParameterInteraction(ArgsManager& argsman) const = 0;
     /** Add wallets that should be opened to list of chain clients. */
     virtual void Construct(node::NodeContext& node) const = 0;
 

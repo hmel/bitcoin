@@ -73,6 +73,6 @@ public:
 /** Functions to keep track of adjusted P2P time */
 int64_t GetTimeOffset();
 int64_t GetAdjustedTime();
-void AddTimeData(const CNetAddr& ip, int64_t nTime);
+void AddTimeData(const CNetAddr& ip, int64_t nTime, int max_time_adjustment);
 
 #endif // BITCOIN_TIMEDATA_H

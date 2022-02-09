@@ -6,6 +6,7 @@
 #ifndef BITCOIN_VALIDATION_H
 #define BITCOIN_VALIDATION_H
 
+#include "util/system.h"
 #if defined(HAVE_CONFIG_H)
 #include <config/bitcoin-config.h>
 #endif
@@ -346,7 +347,7 @@ public:
 };
 
 /** Initializes the script-execution cache */
-void InitScriptExecutionCache();
+void InitScriptExecutionCache(const ArgsManager& args);
 
 /** Functions for validating blocks and updating the block tree */
 
@@ -427,7 +428,7 @@ public:
     //! state to disk, which should not be done until the health of the database is verified.
     //!
     //! All arguments forwarded onto CCoinsViewDB.
-    CoinsViews(std::string ldb_name, size_t cache_size_bytes, bool in_memory, bool should_wipe);
+    CoinsViews(const ArgsManager& args, std::string ldb_name, size_t cache_size_bytes, bool in_memory, bool should_wipe);
 
     //! Initialize the CCoinsViewCache member.
     void InitCache() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
@@ -714,6 +715,8 @@ public:
 
     std::string ToString() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
+    const ArgsManager& args() const { return m_blockman.args(); }
+
 private:
     bool ActivateBestChainStep(BlockValidationState& state, CBlockIndex* pindexMostWork, const std::shared_ptr<const CBlock>& pblock, bool& fInvalidFound, ConnectTrace& connectTrace) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_mempool->cs);
     bool ConnectTip(BlockValidationState& state, CBlockIndex* pindexNew, const std::shared_ptr<const CBlock>& pblock, ConnectTrace& connectTrace, DisconnectedBlockTransactions& disconnectpool) EXCLUSIVE_LOCKS_REQUIRED(cs_main, m_mempool->cs);
@@ -832,6 +835,8 @@ private:
 
     CBlockIndex* m_best_invalid;
     friend bool node::BlockManager::LoadBlockIndex(const Consensus::Params&, ChainstateManager&);
+
+    const ArgsManager& m_args;
 
     //! Internal helper for ActivateSnapshot().
     [[nodiscard]] bool PopulateAndValidateSnapshot(
@@ -992,6 +997,7 @@ public:
     //! ResizeCoinsCaches() as needed.
     void MaybeRebalanceCaches() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
+    ChainstateManager(const ArgsManager& args) : m_args(args), m_blockman(args) {}
     ~ChainstateManager() {
         LOCK(::cs_main);
         UnloadBlockIndex(/* mempool */ nullptr, *this);
@@ -1002,7 +1008,7 @@ public:
 using FopenFn = std::function<FILE*(const fs::path&, const char*)>;
 
 /** Dump the mempool to disk. */
-bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function = fsbridge::fopen, bool skip_file_commit = false);
+bool DumpMempool(const CTxMemPool& pool, const ArgsManager& args, FopenFn mockable_fopen_function = fsbridge::fopen, bool skip_file_commit = false);
 
 /** Load the mempool from disk. */
 bool LoadMempool(CTxMemPool& pool, CChainState& active_chainstate, FopenFn mockable_fopen_function = fsbridge::fopen);

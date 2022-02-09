@@ -194,7 +194,7 @@ RPCHelpMan sendtoaddress()
         fSubtractFeeFromAmount = request.params[4].get_bool();
     }
 
-    CCoinControl coin_control;
+    CCoinControl coin_control(pwallet->args());
     if (!request.params[5].isNull()) {
         coin_control.m_signal_bip125_rbf = request.params[5].get_bool();
     }
@@ -301,7 +301,7 @@ RPCHelpMan sendmany()
     if (!request.params[4].isNull())
         subtractFeeFromAmount = request.params[4].get_array();
 
-    CCoinControl coin_control;
+    CCoinControl coin_control(pwallet->args());
     if (!request.params[5].isNull()) {
         coin_control.m_signal_bip125_rbf = request.params[5].get_bool();
     }
@@ -733,7 +733,7 @@ RPCHelpMan fundrawtransaction()
 
     CAmount fee;
     int change_position;
-    CCoinControl coin_control;
+    CCoinControl coin_control(pwallet->args());
     // Automatically select (additional) coins. Can be overridden by options.add_inputs.
     coin_control.m_add_inputs = true;
     FundTransaction(*pwallet, tx, fee, change_position, request.params[1], coin_control, /* override_min_fee */ true);
@@ -915,7 +915,7 @@ static RPCHelpMan bumpfee_helper(std::string method_name)
     RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VOBJ});
     uint256 hash(ParseHashV(request.params[0], "txid"));
 
-    CCoinControl coin_control;
+    CCoinControl coin_control(pwallet->args());
     coin_control.fAllowWatchOnly = pwallet->IsWalletFlagSet(WALLET_FLAG_DISABLE_PRIVATE_KEYS);
     // optional parameters
     coin_control.m_signal_bip125_rbf = true;
@@ -1172,7 +1172,7 @@ RPCHelpMan send()
                 rbf = options["replaceable"].get_bool();
             }
             CMutableTransaction rawTx = ConstructTransaction(options["inputs"], request.params[0], options["locktime"], rbf);
-            CCoinControl coin_control;
+            CCoinControl coin_control(pwallet->args());
             // Automatically select coins, unless at least one is manually selected. Can
             // be overridden by options.add_inputs.
             coin_control.m_add_inputs = rawTx.vin.size() == 0;
@@ -1413,7 +1413,7 @@ RPCHelpMan walletcreatefundedpsbt()
         rbf = replaceable_arg.isTrue();
     }
     CMutableTransaction rawTx = ConstructTransaction(request.params[0], request.params[1], request.params[2], rbf);
-    CCoinControl coin_control;
+    CCoinControl coin_control(pwallet->args());
     // Automatically select coins, unless at least one is manually selected. Can
     // be overridden by options.add_inputs.
     coin_control.m_add_inputs = rawTx.vin.size() == 0;

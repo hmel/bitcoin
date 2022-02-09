@@ -14,6 +14,7 @@
 
 #ifdef ENABLE_EXTERNAL_SIGNER
 
+#if 0
 static RPCHelpMan enumeratesigners()
 {
     return RPCHelpMan{"enumeratesigners",
@@ -61,14 +62,14 @@ static RPCHelpMan enumeratesigners()
         }
     };
 }
-
+#endif //0
 void RegisterSignerRPCCommands(CRPCTable &t)
 {
 // clang-format off
 static const CRPCCommand commands[] =
 { // category              actor (function)
   // --------------------- ------------------------
-  { "signer",              &enumeratesigners,      },
+    //{ "signer",              &enumeratesigners,      },
 };
 // clang-format on
     for (const auto& c : commands) {

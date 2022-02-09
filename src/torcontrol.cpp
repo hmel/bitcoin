@@ -305,11 +305,13 @@ std::map<std::string,std::string> ParseTorReplyMapping(const std::string &s)
     return mapping;
 }
 
-TorController::TorController(struct event_base* _base, const std::string& tor_control_center, const CService& target):
+TorController::TorController(struct event_base* _base, const CService& target, const ArgsManager& args):
     base(_base),
-    m_tor_control_center(tor_control_center), conn(base), reconnect(true), reconnect_ev(0),
+    conn(base),
     reconnect_timeout(RECONNECT_TIMEOUT_START),
-    m_target(target)
+    m_target(target),
+    m_args(args),
+    m_tor_control_center(m_args.GetArg("-torcontrol", DEFAULT_TOR_CONTROL))
 {
     reconnect_ev = event_new(base, -1, 0, reconnect_cb, this);
     if (!reconnect_ev)
@@ -380,7 +382,7 @@ void TorController::auth_cb(TorControlConnection& _conn, const TorControlReply& 
 
         // Now that we know Tor is running setup the proxy for onion addresses
         // if -onion isn't set to something else.
-        if (gArgs.GetArg("-onion", "") == "") {
+        if (m_args.GetArg("-onion", "") == "") {
             CService resolved(LookupNumeric("127.0.0.1", 9050));
             proxyType addrOnion = proxyType(resolved, true);
             SetProxy(NET_ONION, addrOnion);
@@ -497,7 +499,7 @@ void TorController::protocolinfo_cb(TorControlConnection& _conn, const TorContro
          *   cookie:   hex-encoded ~/.tor/control_auth_cookie
          *   password: "password"
          */
-        std::string torpassword = gArgs.GetArg("-torpassword", "");
+        std::string torpassword = m_args.GetArg("-torpassword", "");
         if (!torpassword.empty()) {
             if (methods.count("HASHEDPASSWORD")) {
                 LogPrint(BCLog::TOR, "tor: Using HASHEDPASSWORD authentication\n");
@@ -575,7 +577,7 @@ void TorController::Reconnect()
 
 fs::path TorController::GetPrivateKeyFile()
 {
-    return gArgs.GetDataDirNet() / "onion_v3_private_key";
+    return m_args.GetDataDirNet() / "onion_v3_private_key";
 }
 
 void TorController::reconnect_cb(evutil_socket_t fd, short what, void *arg)
@@ -588,15 +590,15 @@ void TorController::reconnect_cb(evutil_socket_t fd, short what, void *arg)
 static struct event_base *gBase;
 static std::thread torControlThread;
 
-static void TorControlThread(CService onion_service_target)
+static void TorControlThread(CService onion_service_target, const ArgsManager& args)
 {
     SetSyscallSandboxPolicy(SyscallSandboxPolicy::TOR_CONTROL);
-    TorController ctrl(gBase, gArgs.GetArg("-torcontrol", DEFAULT_TOR_CONTROL), onion_service_target);
+    TorController ctrl(gBase, onion_service_target, args/*.GetArg("-torcontrol", DEFAULT_TOR_CONTROL)*/);
 
     event_base_dispatch(gBase);
 }
 
-void StartTorControl(CService onion_service_target)
+void StartTorControl(CService onion_service_target, const ArgsManager& args)
 {
     assert(!gBase);
 #ifdef WIN32
@@ -610,8 +612,8 @@ void StartTorControl(CService onion_service_target)
         return;
     }
 
-    torControlThread = std::thread(&util::TraceThread, "torcontrol", [onion_service_target] {
-        TorControlThread(onion_service_target);
+    torControlThread = std::thread(&util::TraceThread, "torcontrol", [onion_service_target, &args] {
+        TorControlThread(onion_service_target, args);
     });
 }
 

@@ -19,9 +19,9 @@ namespace {
 class BitcoindInit : public interfaces::Init
 {
 public:
-    BitcoindInit(NodeContext& node) : m_node(node)
+    BitcoindInit(ArgsManager& args, NodeContext& node) : m_node(node)
     {
-        m_node.args = &gArgs;
+        m_node.args = &args;
         m_node.init = this;
     }
     std::unique_ptr<interfaces::Node> makeNode() override { return interfaces::MakeNode(m_node); }
@@ -37,8 +37,8 @@ public:
 } // namespace init
 
 namespace interfaces {
-std::unique_ptr<Init> MakeNodeInit(NodeContext& node, int argc, char* argv[], int& exit_status)
+std::unique_ptr<Init> MakeNodeInit(ArgsManager& args, NodeContext& node, int argc, char* argv[], int& exit_status)
 {
-    return std::make_unique<init::BitcoindInit>(node);
+    return std::make_unique<init::BitcoindInit>(args, node);
 }
 } // namespace interfaces

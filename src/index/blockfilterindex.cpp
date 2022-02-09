@@ -93,14 +93,13 @@ struct DBHashKey {
 
 static std::map<BlockFilterType, BlockFilterIndex> g_filter_indexes;
 
-BlockFilterIndex::BlockFilterIndex(BlockFilterType filter_type,
-                                   size_t n_cache_size, bool f_memory, bool f_wipe)
+BlockFilterIndex::BlockFilterIndex(BlockFilterType filter_type, fs::path data_dir_net, size_t n_cache_size, bool f_memory, bool f_wipe)
     : m_filter_type(filter_type)
 {
     const std::string& filter_name = BlockFilterTypeName(filter_type);
     if (filter_name.empty()) throw std::invalid_argument("unknown filter_type");
 
-    fs::path path = gArgs.GetDataDirNet() / "indexes" / "blockfilter" / filter_name;
+    fs::path path = data_dir_net / "indexes" / "blockfilter" / filter_name;
     fs::create_directories(path);
 
     m_name = filter_name + " block filter index";
@@ -462,12 +461,12 @@ void ForEachBlockFilterIndex(std::function<void (BlockFilterIndex&)> fn)
     for (auto& entry : g_filter_indexes) fn(entry.second);
 }
 
-bool InitBlockFilterIndex(BlockFilterType filter_type,
+bool InitBlockFilterIndex(BlockFilterType filter_type, fs::path data_dir_net,
                           size_t n_cache_size, bool f_memory, bool f_wipe)
 {
     auto result = g_filter_indexes.emplace(std::piecewise_construct,
                                            std::forward_as_tuple(filter_type),
-                                           std::forward_as_tuple(filter_type,
+                                           std::forward_as_tuple(filter_type, data_dir_net,
                                                                  n_cache_size, f_memory, f_wipe));
     return result.second;
 }

@@ -7,8 +7,8 @@
 #include <util/system.h>
 
 namespace wallet {
-CCoinControl::CCoinControl()
+CCoinControl::CCoinControl(const ArgsManager& args)
 {
-    m_avoid_partial_spends = gArgs.GetBoolArg("-avoidpartialspends", DEFAULT_AVOIDPARTIALSPENDS);
+    m_avoid_partial_spends = args.GetBoolArg("-avoidpartialspends", DEFAULT_AVOIDPARTIALSPENDS);
 }
 } // namespace wallet
