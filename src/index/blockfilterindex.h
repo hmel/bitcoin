@@ -28,6 +28,8 @@ private:
     std::string m_name;
     std::unique_ptr<BaseIndex::DB> m_db;
 
+    fs::path m_data_dir_net;
+
     FlatFilePos m_next_filter_pos;
     std::unique_ptr<FlatFileSeq> m_filter_fileseq;
 

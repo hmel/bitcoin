@@ -5,17 +5,19 @@
 #ifndef BITCOIN_WALLET_DUMP_H
 #define BITCOIN_WALLET_DUMP_H
 
+#include "util/system.h"
 #include <fs.h>
 
 #include <string>
 #include <vector>
 
 struct bilingual_str;
+class ArgsManager;
 
 namespace wallet {
 class CWallet;
 bool DumpWallet(CWallet& wallet, bilingual_str& error);
-bool CreateFromDump(const std::string& name, const fs::path& wallet_path, bilingual_str& error, std::vector<bilingual_str>& warnings);
+bool CreateFromDump(const std::string& name, const fs::path& wallet_path, const ArgsManager& args, bilingual_str& error, std::vector<bilingual_str>& warnings);
 } // namespace wallet
 
 #endif // BITCOIN_WALLET_DUMP_H

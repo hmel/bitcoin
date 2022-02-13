@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <rpc/blockchain.h>
 
 #include <blockfilter.h>
@@ -166,7 +167,7 @@ UniValue blockheaderToJSON(const CBlockIndex* tip, const CBlockIndex* blockindex
     return result;
 }
 
-UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, TxVerbosity verbosity)
+UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, TxVerbosity verbosity, const ArgsManager& args)
 {
     UniValue result = blockheaderToJSON(tip, blockindex);
 
@@ -185,14 +186,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
         case TxVerbosity::SHOW_DETAILS:
         case TxVerbosity::SHOW_DETAILS_AND_PREVOUT:
             CBlockUndo blockUndo;
-            const bool have_undo{WITH_LOCK(::cs_main, return !IsBlockPruned(blockindex) && UndoReadFromDisk(blockUndo, blockindex))};
+            const bool have_undo{WITH_LOCK(::cs_main, return !IsBlockPruned(blockindex) && UndoReadFromDisk(blockUndo, blockindex, args.GetDataDirNet()))};
 
             for (size_t i = 0; i < block.vtx.size(); ++i) {
                 const CTransactionRef& tx = block.vtx.at(i);
                 // coinbase transaction (i.e. i == 0) doesn't have undo data
                 const CTxUndo* txundo = (have_undo && i > 0) ? &blockUndo.vtxundo.at(i - 1) : nullptr;
                 UniValue objTx(UniValue::VOBJ);
-                TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(), txundo, verbosity);
+                TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(Params().args()), txundo, verbosity);
                 txs.push_back(objTx);
             }
             break;
@@ -469,7 +470,7 @@ static void entryToJSON(const CTxMemPool& pool, UniValue& info, const CTxMemPool
     info.pushKV("vsize", (int)e.GetTxSize());
     info.pushKV("weight", (int)e.GetTxWeight());
     // TODO: top-level fee fields are deprecated. deprecated_fee_fields_enabled blocks should be removed in v24
-    const bool deprecated_fee_fields_enabled{IsDeprecatedRPCEnabled("fees")};
+    const bool deprecated_fee_fields_enabled{IsDeprecatedRPCEnabled("fees", Params().args())};
     if (deprecated_fee_fields_enabled) {
         info.pushKV("fee", ValueFromAmount(e.GetFee()));
         info.pushKV("modifiedfee", ValueFromAmount(e.GetModifiedFee()));
@@ -938,7 +939,7 @@ static CBlock GetBlockChecked(const CBlockIndex* pblockindex) EXCLUSIVE_LOCKS_RE
         throw JSONRPCError(RPC_MISC_ERROR, "Block not available (pruned data)");
     }
 
-    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus(), Params().args())) {
         // Block not found on disk. This could be because we have the block
         // header in our index but not yet have the block or did not accept the
         // block.
@@ -948,7 +949,7 @@ static CBlock GetBlockChecked(const CBlockIndex* pblockindex) EXCLUSIVE_LOCKS_RE
     return block;
 }
 
-static CBlockUndo GetUndoChecked(const CBlockIndex* pblockindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
+static CBlockUndo GetUndoChecked(const CBlockIndex* pblockindex, const ArgsManager& args) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 {
     AssertLockHeld(::cs_main);
     CBlockUndo blockUndo;
@@ -956,7 +957,7 @@ static CBlockUndo GetUndoChecked(const CBlockIndex* pblockindex) EXCLUSIVE_LOCKS
         throw JSONRPCError(RPC_MISC_ERROR, "Undo data not available (pruned data)");
     }
 
-    if (!UndoReadFromDisk(blockUndo, pblockindex)) {
+    if (!UndoReadFromDisk(blockUndo, pblockindex, args.GetDataDirNet())) {
         throw JSONRPCError(RPC_MISC_ERROR, "Can't read undo data from disk");
     }
 
@@ -1066,8 +1067,8 @@ static RPCHelpMan getblock()
     CBlock block;
     const CBlockIndex* pblockindex;
     const CBlockIndex* tip;
+    ChainstateManager& chainman = EnsureAnyChainman(request.context);
     {
-        ChainstateManager& chainman = EnsureAnyChainman(request.context);
         LOCK(cs_main);
         pblockindex = chainman.m_blockman.LookupBlockIndex(hash);
         tip = chainman.ActiveChain().Tip();
@@ -1081,7 +1082,7 @@ static RPCHelpMan getblock()
 
     if (verbosity <= 0)
     {
-        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
+        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags(Params().args()));
         ssBlock << block;
         std::string strHex = HexStr(ssBlock);
         return strHex;
@@ -1096,7 +1097,7 @@ static RPCHelpMan getblock()
         tx_verbosity = TxVerbosity::SHOW_DETAILS_AND_PREVOUT;
     }
 
-    return blockToJSON(block, tip, pblockindex, tx_verbosity);
+    return blockToJSON(block, tip, pblockindex, tx_verbosity, chainman.args());
 },
     };
 }
@@ -1599,7 +1600,7 @@ RPCHelpMan getblockchaininfo()
         }
     }
 
-    if (IsDeprecatedRPCEnabled("softforks")) {
+    if (IsDeprecatedRPCEnabled("softforks", Params().args())) {
         const Consensus::Params& consensusParams = Params().GetConsensus();
         obj.pushKV("softforks", DeploymentInfo(tip, consensusParams));
     }
@@ -1851,7 +1852,7 @@ static RPCHelpMan getmempoolinfo()
                 },
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
-    return MempoolInfoToJSON(EnsureAnyMemPool(request.context));
+    return MempoolInfoToJSON(EnsureAnyMemPool(request.context), Params().args());
 },
     };
 }
@@ -2190,7 +2191,7 @@ static RPCHelpMan getblockstats()
     }
 
     const CBlock block = GetBlockChecked(pindex);
-    const CBlockUndo blockUndo = GetUndoChecked(pindex);
+    const CBlockUndo blockUndo = GetUndoChecked(pindex, chainman.args());
 
     const bool do_all = stats.size() == 0; // Calculate everything if nothing selected (default)
     const bool do_mediantxsize = do_all || stats.count("mediantxsize") != 0;

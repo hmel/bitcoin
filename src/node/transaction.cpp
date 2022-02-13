@@ -144,7 +144,7 @@ CTransactionRef GetTransaction(const CBlockIndex* const block_index, const CTxMe
     }
     if (block_index) {
         CBlock block;
-        if (ReadBlockFromDisk(block, block_index, consensusParams)) {
+        if (ReadBlockFromDisk(block, block_index, consensusParams, Params().args())) {
             for (const auto& tx : block.vtx) {
                 if (tx->GetHash() == hash) {
                     hashBlock = block_index->GetBlockHash();

@@ -61,7 +61,7 @@ static void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& 
     // Blockchain contextual information (confirmations and blocktime) is not
     // available to code in bitcoin-common, so we query them here and push the
     // data into the returned UniValue.
-    TxToUniv(tx, uint256(), entry, true, RPCSerializationFlags());
+    TxToUniv(tx, uint256(), entry, true, RPCSerializationFlags(Params().args()));
 
     if (!hashBlock.IsNull()) {
         LOCK(cs_main);
@@ -257,7 +257,7 @@ static RPCHelpMan getrawtransaction()
     }
 
     if (!fVerbose) {
-        return EncodeHexTx(*tx, RPCSerializationFlags());
+        return EncodeHexTx(*tx, RPCSerializationFlags(Params().args()));
     }
 
     UniValue result(UniValue::VOBJ);
@@ -346,7 +346,7 @@ static RPCHelpMan gettxoutproof()
     }
 
     CBlock block;
-    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus(), Params().args())) {
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Can't read block from disk");
     }
 

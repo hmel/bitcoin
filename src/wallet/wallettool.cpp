@@ -51,7 +51,7 @@ static const std::shared_ptr<CWallet> MakeWallet(const std::string& name, const 
 {
     DatabaseStatus status;
     bilingual_str error;
-    std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, status, error);
+    std::unique_ptr<WalletDatabase> database = MakeDatabase(path, options, status, error, args);
     if (!database) {
         tfm::format(std::cerr, "%s\n", error.original);
         return nullptr;
@@ -136,7 +136,7 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
         return false;
     }
     const std::string name = args.GetArg("-wallet", "");
-    const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(), fs::PathFromString(name));
+    const fs::path path = fsbridge::AbsPathJoin(GetWalletDir(args), fs::PathFromString(name));
 
     if (command == "create") {
         DatabaseOptions options;
@@ -174,7 +174,7 @@ bool ExecuteWalletToolFunc(const ArgsManager& args, const std::string& command)
 #ifdef USE_BDB
         bilingual_str error;
         std::vector<bilingual_str> warnings;
-        bool ret = RecoverDatabaseFile(path, error, warnings);
+        bool ret = RecoverDatabaseFile(path, error, warnings, args);
         if (!ret) {
             for (const auto& warning : warnings) {
                 tfm::format(std::cerr, "%s\n", warning.original);

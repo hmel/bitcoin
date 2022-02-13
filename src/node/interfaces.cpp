@@ -355,7 +355,7 @@ bool FillBlock(const CBlockIndex* index, const FoundBlock& block, UniqueLock<Rec
     if (block.m_next_block) FillBlock(active[index->nHeight] == index ? active[index->nHeight + 1] : nullptr, *block.m_next_block, lock, active);
     if (block.m_data) {
         REVERSE_LOCK(lock);
-        if (!ReadBlockFromDisk(*block.m_data, index, Params().GetConsensus())) block.m_data->SetNull();
+        if (!ReadBlockFromDisk(*block.m_data, index, Params().GetConsensus(), Params().args())) block.m_data->SetNull();
     }
     block.found = true;
     return true;
@@ -675,12 +675,12 @@ public:
     {
         return std::make_unique<RpcHandlerImpl>(command);
     }
-    bool rpcEnableDeprecated(const std::string& method) override { return IsDeprecatedRPCEnabled(method); }
+    bool rpcEnableDeprecated(const std::string& method) override { return IsDeprecatedRPCEnabled(method, Assert(m_node.chainman)->args()); }
     void rpcRunLater(const std::string& name, std::function<void()> fn, int64_t seconds) override
     {
         RPCRunLater(name, std::move(fn), seconds);
     }
-    int rpcSerializationFlags() override { return RPCSerializationFlags(); }
+    int rpcSerializationFlags() override { return RPCSerializationFlags(Params().args()); }
     util::SettingsValue getSetting(const std::string& name) override
     {
         return m_node.args->GetSetting(name);

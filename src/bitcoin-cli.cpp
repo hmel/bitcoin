@@ -118,23 +118,23 @@ public:
 // This function returns either one of EXIT_ codes when it's expected to stop the process or
 // CONTINUE_EXECUTION when it's expected to continue further.
 //
-static int AppInitRPC(int argc, char* argv[])
+static int AppInitRPC(int argc, char* argv[], ArgsManager& args)
 {
-    SetupCliArgs(gArgs);
+    SetupCliArgs(args);
     std::string error;
-    if (!gArgs.ParseParameters(argc, argv, error)) {
+    if (!args.ParseParameters(argc, argv, error)) {
         tfm::format(std::cerr, "Error parsing command line arguments: %s\n", error);
         return EXIT_FAILURE;
     }
-    if (argc < 2 || HelpRequested(gArgs) || gArgs.IsArgSet("-version")) {
+    if (argc < 2 || HelpRequested(args) || args.IsArgSet("-version")) {
         std::string strUsage = PACKAGE_NAME " RPC client version " + FormatFullVersion() + "\n";
-        if (!gArgs.IsArgSet("-version")) {
+        if (!args.IsArgSet("-version")) {
             strUsage += "\n"
                 "Usage:  bitcoin-cli [options] <command> [params]  Send command to " PACKAGE_NAME "\n"
                 "or:     bitcoin-cli [options] -named <command> [name=value]...  Send command to " PACKAGE_NAME " (with named arguments)\n"
                 "or:     bitcoin-cli [options] help                List commands\n"
                 "or:     bitcoin-cli [options] help <command>      Get help for a command\n";
-            strUsage += "\n" + gArgs.GetHelpMessage();
+            strUsage += "\n" + args.GetHelpMessage();
         }
 
         tfm::format(std::cout, "%s", strUsage);
@@ -144,17 +144,17 @@ static int AppInitRPC(int argc, char* argv[])
         }
         return EXIT_SUCCESS;
     }
-    if (!CheckDataDirOption()) {
-        tfm::format(std::cerr, "Error: Specified data directory \"%s\" does not exist.\n", gArgs.GetArg("-datadir", ""));
+    if (!CheckDataDirOption(args)) {
+        tfm::format(std::cerr, "Error: Specified data directory \"%s\" does not exist.\n", args.GetArg("-datadir", ""));
         return EXIT_FAILURE;
     }
-    if (!gArgs.ReadConfigFiles(error, true)) {
+    if (!args.ReadConfigFiles(error, true)) {
         tfm::format(std::cerr, "Error reading configuration file: %s\n", error);
         return EXIT_FAILURE;
     }
     // Check for chain settings (BaseParams() calls are only valid after this clause)
     try {
-        SelectBaseParams(gArgs.GetChainName());
+        SelectBaseParams(args.GetChainName(), args);
     } catch (const std::exception& e) {
         tfm::format(std::cerr, "Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -235,8 +235,8 @@ class BaseRequestHandler
 {
 public:
     virtual ~BaseRequestHandler() {}
-    virtual UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) = 0;
-    virtual UniValue ProcessReply(const UniValue &batch_in) = 0;
+    virtual UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args, const ArgsManager& argsman) = 0;
+    virtual UniValue ProcessReply(const UniValue& batch_in, const ArgsManager& argsman) = 0;
 };
 
 /** Process addrinfo requests */
@@ -252,7 +252,7 @@ private:
     }
 
 public:
-    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
+    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args, const ArgsManager& argsman) override
     {
         if (!args.empty()) {
             throw std::runtime_error("-addrinfo takes no arguments");
@@ -261,7 +261,7 @@ public:
         return JSONRPCRequestObj("getnodeaddresses", params, 1);
     }
 
-    UniValue ProcessReply(const UniValue& reply) override
+    UniValue ProcessReply(const UniValue& reply, const ArgsManager& argsman) override
     {
         if (!reply["error"].isNull()) return reply;
         const std::vector<UniValue>& nodes{reply["result"].getValues()};
@@ -299,7 +299,7 @@ public:
     const int ID_BALANCES = 3;
 
     /** Create a simulated `getinfo` request. */
-    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
+    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args, const ArgsManager& argsman) override
     {
         if (!args.empty()) {
             throw std::runtime_error("-getinfo takes no arguments");
@@ -313,7 +313,7 @@ public:
     }
 
     /** Collect values from the batch and form a simulated `getinfo` reply. */
-    UniValue ProcessReply(const UniValue &batch_in) override
+    UniValue ProcessReply(const UniValue& batch_in, const ArgsManager& argsman) override
     {
         UniValue result(UniValue::VOBJ);
         const std::vector<UniValue> batch = JSONRPCProcessBatchReply(batch_in);
@@ -408,11 +408,11 @@ private:
         bool operator<(const Peer& rhs) const { return std::tie(is_outbound, min_ping) < std::tie(rhs.is_outbound, rhs.min_ping); }
     };
     std::vector<Peer> m_peers;
-    std::string ChainToString() const
+    std::string ChainToString(const ArgsManager& args) const
     {
-        if (gArgs.GetChainName() == CBaseChainParams::TESTNET) return " testnet";
-        if (gArgs.GetChainName() == CBaseChainParams::SIGNET) return " signet";
-        if (gArgs.GetChainName() == CBaseChainParams::REGTEST) return " regtest";
+        if (args.GetChainName() == CBaseChainParams::TESTNET) return " testnet";
+        if (args.GetChainName() == CBaseChainParams::SIGNET) return " signet";
+        if (args.GetChainName() == CBaseChainParams::REGTEST) return " regtest";
         return "";
     }
     std::string PingTimeToString(double seconds) const
@@ -435,7 +435,7 @@ public:
     static constexpr int ID_PEERINFO = 0;
     static constexpr int ID_NETWORKINFO = 1;
 
-    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
+    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args, const ArgsManager& argsman) override
     {
         if (!args.empty()) {
             uint8_t n{0};
@@ -451,7 +451,7 @@ public:
         return result;
     }
 
-    UniValue ProcessReply(const UniValue& batch_in) override
+    UniValue ProcessReply(const UniValue& batch_in, const ArgsManager& argsman) override
     {
         const std::vector<UniValue> batch{JSONRPCProcessBatchReply(batch_in)};
         if (!batch[ID_PEERINFO]["error"].isNull()) return batch[ID_PEERINFO];
@@ -507,7 +507,7 @@ public:
         }
 
         // Generate report header.
-        std::string result{strprintf("%s client %s%s - server %i%s\n\n", PACKAGE_NAME, FormatFullVersion(), ChainToString(), networkinfo["protocolversion"].get_int(), networkinfo["subversion"].get_str())};
+        std::string result{strprintf("%s client %s%s - server %i%s\n\n", PACKAGE_NAME, FormatFullVersion(), ChainToString(argsman), networkinfo["protocolversion"].get_int(), networkinfo["subversion"].get_str())};
 
         // Report detailed peer connections list sorted by direction and minimum ping time.
         if (DetailsRequested() && !m_peers.empty()) {
@@ -665,14 +665,14 @@ public:
 class GenerateToAddressRequestHandler : public BaseRequestHandler
 {
 public:
-    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
+    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args, const ArgsManager& argsman) override
     {
         address_str = args.at(1);
         UniValue params{RPCConvertValues("generatetoaddress", args)};
         return JSONRPCRequestObj("generatetoaddress", params, 1);
     }
 
-    UniValue ProcessReply(const UniValue &reply) override
+    UniValue ProcessReply(const UniValue& reply, const ArgsManager& argsman) override
     {
         UniValue result(UniValue::VOBJ);
         result.pushKV("address", address_str);
@@ -686,10 +686,10 @@ protected:
 /** Process default single requests */
 class DefaultRequestHandler: public BaseRequestHandler {
 public:
-    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args) override
+    UniValue PrepareRequest(const std::string& method, const std::vector<std::string>& args, const ArgsManager& argsman) override
     {
         UniValue params;
-        if(gArgs.GetBoolArg("-named", DEFAULT_NAMED)) {
+        if(argsman.GetBoolArg("-named", DEFAULT_NAMED)) {
             params = RPCConvertNamedValues(method, args);
         } else {
             params = RPCConvertValues(method, args);
@@ -697,13 +697,13 @@ public:
         return JSONRPCRequestObj(method, params, 1);
     }
 
-    UniValue ProcessReply(const UniValue &reply) override
+    UniValue ProcessReply(const UniValue& reply, const ArgsManager& argsman) override
     {
         return reply.get_obj();
     }
 };
 
-static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, const std::vector<std::string>& args, const std::optional<std::string>& rpcwallet = {})
+static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, const std::vector<std::string>& args, const ArgsManager& argsman, const std::optional<std::string>& rpcwallet = {})
 {
     std::string host;
     // In preference order, we choose the following for the port:
@@ -711,8 +711,8 @@ static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, co
     //     2. port in -rpcconnect (ie following : in ipv4 or ]: in ipv6)
     //     3. default port for chain
     uint16_t port{BaseParams().RPCPort()};
-    SplitHostPort(gArgs.GetArg("-rpcconnect", DEFAULT_RPCCONNECT), port, host);
-    port = static_cast<uint16_t>(gArgs.GetIntArg("-rpcport", port));
+    SplitHostPort(argsman.GetArg("-rpcconnect", DEFAULT_RPCCONNECT), port, host);
+    port = static_cast<uint16_t>(argsman.GetIntArg("-rpcport", port));
 
     // Obtain event base
     raii_event_base base = obtain_event_base();
@@ -722,7 +722,7 @@ static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, co
 
     // Set connection timeout
     {
-        const int timeout = gArgs.GetIntArg("-rpcclienttimeout", DEFAULT_HTTP_CLIENT_TIMEOUT);
+        const int timeout = argsman.GetIntArg("-rpcclienttimeout", DEFAULT_HTTP_CLIENT_TIMEOUT);
         if (timeout > 0) {
             evhttp_connection_set_timeout(evcon.get(), timeout);
         } else {
@@ -745,13 +745,13 @@ static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, co
     // Get credentials
     std::string strRPCUserColonPass;
     bool failedToGetAuthCookie = false;
-    if (gArgs.GetArg("-rpcpassword", "") == "") {
+    if (argsman.GetArg("-rpcpassword", "") == "") {
         // Try fall back to cookie-based authentication if no password is provided
-        if (!GetAuthCookie(&strRPCUserColonPass)) {
+        if (!GetAuthCookie(argsman, &strRPCUserColonPass)) {
             failedToGetAuthCookie = true;
         }
     } else {
-        strRPCUserColonPass = gArgs.GetArg("-rpcuser", "") + ":" + gArgs.GetArg("-rpcpassword", "");
+        strRPCUserColonPass = argsman.GetArg("-rpcuser", "") + ":" + argsman.GetArg("-rpcpassword", "");
     }
 
     struct evkeyvalq* output_headers = evhttp_request_get_output_headers(req.get());
@@ -762,7 +762,7 @@ static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, co
     evhttp_add_header(output_headers, "Authorization", (std::string("Basic ") + EncodeBase64(strRPCUserColonPass)).c_str());
 
     // Attach request data
-    std::string strRequest = rh->PrepareRequest(strMethod, args).write() + "\n";
+    std::string strRequest = rh->PrepareRequest(strMethod, args, argsman).write() + "\n";
     struct evbuffer* output_buffer = evhttp_request_get_output_buffer(req.get());
     assert(output_buffer);
     evbuffer_add(output_buffer, strRequest.data(), strRequest.size());
@@ -796,7 +796,7 @@ static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, co
         if (failedToGetAuthCookie) {
             throw std::runtime_error(strprintf(
                 "Could not locate RPC credentials. No authentication cookie could be found, and RPC password is not set.  See -rpcpassword and -stdinrpcpass.  Configuration file: (%s)",
-                fs::PathToString(GetConfigFile(gArgs.GetArg("-conf", BITCOIN_CONF_FILENAME)))));
+                fs::PathToString(GetConfigFile(argsman.GetArg("-conf", BITCOIN_CONF_FILENAME), argsman))));
         } else {
             throw std::runtime_error("Authorization failed: Incorrect rpcuser or rpcpassword");
         }
@@ -811,7 +811,7 @@ static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, co
     UniValue valReply(UniValue::VSTR);
     if (!valReply.read(response.body))
         throw std::runtime_error("couldn't parse reply from server");
-    const UniValue reply = rh->ProcessReply(valReply);
+    const UniValue reply = rh->ProcessReply(valReply, argsman);
     if (reply.empty())
         throw std::runtime_error("expected reply to have result, error and id properties");
 
@@ -827,17 +827,18 @@ static UniValue CallRPC(BaseRequestHandler* rh, const std::string& strMethod, co
  * @returns the RPC response as a UniValue object.
  * @throws a CConnectionFailed std::runtime_error if connection failed or RPC server still in warmup.
  */
-static UniValue ConnectAndCallRPC(BaseRequestHandler* rh, const std::string& strMethod, const std::vector<std::string>& args, const std::optional<std::string>& rpcwallet = {})
+static UniValue ConnectAndCallRPC(BaseRequestHandler* rh, const std::string& strMethod, const std::vector<std::string>& args,
+                                  const ArgsManager& argsman, const std::optional<std::string>& rpcwallet = {})
 {
     UniValue response(UniValue::VOBJ);
     // Execute and handle connection failures with -rpcwait.
-    const bool fWait = gArgs.GetBoolArg("-rpcwait", false);
-    const int timeout = gArgs.GetIntArg("-rpcwaittimeout", DEFAULT_WAIT_CLIENT_TIMEOUT);
+    const bool fWait = argsman.GetBoolArg("-rpcwait", false);
+    const int timeout = argsman.GetIntArg("-rpcwaittimeout", DEFAULT_WAIT_CLIENT_TIMEOUT);
     const auto deadline{GetTime<std::chrono::microseconds>() + 1s * timeout};
 
     do {
         try {
-            response = CallRPC(rh, strMethod, args, rpcwallet);
+            response = CallRPC(rh, strMethod, args, argsman, rpcwallet);
             if (fWait) {
                 const UniValue& error = find_value(response, "error");
                 if (!error.isNull() && error["code"].get_int() == RPC_IN_WARMUP) {
@@ -891,10 +892,10 @@ static void ParseError(const UniValue& error, std::string& strPrint, int& nRet)
  *
  * @param result  Reference to UniValue object the wallet names and balances are pushed to.
  */
-static void GetWalletBalances(UniValue& result)
+static void GetWalletBalances(UniValue& result, const ArgsManager& argsman)
 {
     DefaultRequestHandler rh;
-    const UniValue listwallets = ConnectAndCallRPC(&rh, "listwallets", /* args=*/{});
+    const UniValue listwallets = ConnectAndCallRPC(&rh, "listwallets", /* args=*/{}, argsman);
     if (!find_value(listwallets, "error").isNull()) return;
     const UniValue& wallets = find_value(listwallets, "result");
     if (wallets.size() <= 1) return;
@@ -902,7 +903,7 @@ static void GetWalletBalances(UniValue& result)
     UniValue balances(UniValue::VOBJ);
     for (const UniValue& wallet : wallets.getValues()) {
         const std::string wallet_name = wallet.get_str();
-        const UniValue getbalances = ConnectAndCallRPC(&rh, "getbalances", /* args=*/{}, wallet_name);
+        const UniValue getbalances = ConnectAndCallRPC(&rh, "getbalances", /* args=*/{}, argsman, wallet_name);
         const UniValue& balance = find_value(getbalances, "result")["mine"]["trusted"];
         balances.pushKV(wallet_name, balance);
     }
@@ -937,7 +938,7 @@ static void GetProgressBar(double progress, std::string& progress_bar)
  * into a user friendly UniValue string to be printed on the console.
  * @param[out] result  Reference to UniValue result containing the -getinfo output.
  */
-static void ParseGetInfoResult(UniValue& result)
+static void ParseGetInfoResult(UniValue& result, const ArgsManager& args)
 {
     if (!find_value(result, "error").isNull()) return;
 
@@ -951,8 +952,8 @@ static void ParseGetInfoResult(UniValue& result)
     }
 #endif
 
-    if (gArgs.IsArgSet("-color")) {
-        const std::string color{gArgs.GetArg("-color", DEFAULT_COLOR_SETTING)};
+    if (args.IsArgSet("-color")) {
+        const std::string color{args.GetArg("-color", DEFAULT_COLOR_SETTING)};
         if (color == "always") {
             should_colorize = true;
         } else if (color == "never") {
@@ -1058,12 +1059,12 @@ static void ParseGetInfoResult(UniValue& result)
  * Call RPC getnewaddress.
  * @returns getnewaddress response as a UniValue object.
  */
-static UniValue GetNewAddress()
+static UniValue GetNewAddress(const ArgsManager& argsman)
 {
     std::optional<std::string> wallet_name{};
-    if (gArgs.IsArgSet("-rpcwallet")) wallet_name = gArgs.GetArg("-rpcwallet", "");
+    if (argsman.IsArgSet("-rpcwallet")) wallet_name = argsman.GetArg("-rpcwallet", "");
     DefaultRequestHandler rh;
-    return ConnectAndCallRPC(&rh, "getnewaddress", /* args=*/{}, wallet_name);
+    return ConnectAndCallRPC(&rh, "getnewaddress", /* args=*/{}, argsman, wallet_name);
 }
 
 /**
@@ -1082,7 +1083,7 @@ static void SetGenerateToAddressArgs(const std::string& address, std::vector<std
     args.emplace(args.begin() + 1, address);
 }
 
-static int CommandLineRPC(int argc, char *argv[])
+static int CommandLineRPC(int argc, char *argv[], ArgsManager& argsman)
 {
     std::string strPrint;
     int nRet = 0;
@@ -1093,7 +1094,7 @@ static int CommandLineRPC(int argc, char *argv[])
             argv++;
         }
         std::string rpcPass;
-        if (gArgs.GetBoolArg("-stdinrpcpass", false)) {
+        if (argsman.GetBoolArg("-stdinrpcpass", false)) {
             NO_STDIN_ECHO();
             if (!StdinReady()) {
                 fputs("RPC password> ", stderr);
@@ -1105,10 +1106,10 @@ static int CommandLineRPC(int argc, char *argv[])
             if (StdinTerminal()) {
                 fputc('\n', stdout);
             }
-            gArgs.ForceSetArg("-rpcpassword", rpcPass);
+            argsman.ForceSetArg("-rpcpassword", rpcPass);
         }
         std::vector<std::string> args = std::vector<std::string>(&argv[1], &argv[argc]);
-        if (gArgs.GetBoolArg("-stdinwalletpassphrase", false)) {
+        if (argsman.GetBoolArg("-stdinwalletpassphrase", false)) {
             NO_STDIN_ECHO();
             std::string walletPass;
             if (args.size() < 1 || args[0].substr(0, 16) != "walletpassphrase") {
@@ -1126,7 +1127,7 @@ static int CommandLineRPC(int argc, char *argv[])
             }
             args.insert(args.begin() + 1, walletPass);
         }
-        if (gArgs.GetBoolArg("-stdin", false)) {
+        if (argsman.GetBoolArg("-stdin", false)) {
             // Read one arg per line from stdin and append
             std::string line;
             while (std::getline(std::cin, line)) {
@@ -1138,16 +1139,16 @@ static int CommandLineRPC(int argc, char *argv[])
         }
         std::unique_ptr<BaseRequestHandler> rh;
         std::string method;
-        if (gArgs.IsArgSet("-getinfo")) {
+        if (argsman.IsArgSet("-getinfo")) {
             rh.reset(new GetinfoRequestHandler());
-        } else if (gArgs.GetBoolArg("-netinfo", false)) {
+        } else if (argsman.GetBoolArg("-netinfo", false)) {
             if (!args.empty() && args.at(0) == "help") {
                 tfm::format(std::cout, "%s\n", NetinfoRequestHandler().m_help_doc);
                 return 0;
             }
             rh.reset(new NetinfoRequestHandler());
-        } else if (gArgs.GetBoolArg("-generate", false)) {
-            const UniValue getnewaddress{GetNewAddress()};
+        } else if (argsman.GetBoolArg("-generate", false)) {
+            const UniValue getnewaddress{GetNewAddress(argsman)};
             const UniValue& error{find_value(getnewaddress, "error")};
             if (error.isNull()) {
                 SetGenerateToAddressArgs(find_value(getnewaddress, "result").get_str(), args);
@@ -1155,7 +1156,7 @@ static int CommandLineRPC(int argc, char *argv[])
             } else {
                 ParseError(error, strPrint, nRet);
             }
-        } else if (gArgs.GetBoolArg("-addrinfo", false)) {
+        } else if (argsman.GetBoolArg("-addrinfo", false)) {
             rh.reset(new AddrinfoRequestHandler());
         } else {
             rh.reset(new DefaultRequestHandler());
@@ -1168,18 +1169,18 @@ static int CommandLineRPC(int argc, char *argv[])
         if (nRet == 0) {
             // Perform RPC call
             std::optional<std::string> wallet_name{};
-            if (gArgs.IsArgSet("-rpcwallet")) wallet_name = gArgs.GetArg("-rpcwallet", "");
-            const UniValue reply = ConnectAndCallRPC(rh.get(), method, args, wallet_name);
+            if (argsman.IsArgSet("-rpcwallet")) wallet_name = argsman.GetArg("-rpcwallet", "");
+            const UniValue reply = ConnectAndCallRPC(rh.get(), method, args, argsman, wallet_name);
 
             // Parse reply
             UniValue result = find_value(reply, "result");
             const UniValue& error = find_value(reply, "error");
             if (error.isNull()) {
-                if (gArgs.GetBoolArg("-getinfo", false)) {
-                    if (!gArgs.IsArgSet("-rpcwallet")) {
-                        GetWalletBalances(result); // fetch multiwallet balances and append to result
+                if (argsman.GetBoolArg("-getinfo", false)) {
+                    if (!argsman.IsArgSet("-rpcwallet")) {
+                        GetWalletBalances(result, argsman); // fetch multiwallet balances and append to result
                     }
-                    ParseGetInfoResult(result);
+                    ParseGetInfoResult(result, argsman);
                 }
 
                 ParseResult(result, strPrint);
@@ -1215,6 +1216,8 @@ __declspec(dllexport) int main(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
 #endif
+
+    ArgsManager args;
     SetupEnvironment();
     if (!SetupNetworking()) {
         tfm::format(std::cerr, "Error: Initializing networking failed\n");
@@ -1223,7 +1226,7 @@ int main(int argc, char* argv[])
     event_set_log_callback(&libevent_log_cb);
 
     try {
-        int ret = AppInitRPC(argc, argv);
+        int ret = AppInitRPC(argc, argv, args);
         if (ret != CONTINUE_EXECUTION)
             return ret;
     }
@@ -1237,7 +1240,7 @@ int main(int argc, char* argv[])
 
     int ret = EXIT_FAILURE;
     try {
-        ret = CommandLineRPC(argc, argv);
+        ret = CommandLineRPC(argc, argv, args);
     }
     catch (const std::exception& e) {
         PrintExceptionContinue(&e, "CommandLineRPC()");

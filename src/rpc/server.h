@@ -166,7 +166,7 @@ public:
     bool removeCommand(const std::string& name, const CRPCCommand* pcmd);
 };
 
-bool IsDeprecatedRPCEnabled(const std::string& method);
+bool IsDeprecatedRPCEnabled(const std::string& method, const ArgsManager& args);
 
 extern CRPCTable tableRPC;
 
@@ -176,6 +176,6 @@ void StopRPC(const ArgsManager& args);
 std::string JSONRPCExecBatch(const JSONRPCRequest& jreq, const UniValue& vReq);
 
 // Retrieves any serialization flags requested in command line argument
-int RPCSerializationFlags();
+int RPCSerializationFlags(const ArgsManager& args);
 
 #endif // BITCOIN_RPC_SERVER_H

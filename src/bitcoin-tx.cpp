@@ -80,34 +80,34 @@ static void SetupBitcoinTxArgs(ArgsManager &argsman)
 // This function returns either one of EXIT_ codes when it's expected to stop the process or
 // CONTINUE_EXECUTION when it's expected to continue further.
 //
-static int AppInitRawTx(int argc, char* argv[])
+static int AppInitRawTx(int argc, char* argv[], ArgsManager& args)
 {
-    SetupBitcoinTxArgs(gArgs);
+    SetupBitcoinTxArgs(args);
     std::string error;
-    if (!gArgs.ParseParameters(argc, argv, error)) {
+    if (!args.ParseParameters(argc, argv, error)) {
         tfm::format(std::cerr, "Error parsing command line arguments: %s\n", error);
         return EXIT_FAILURE;
     }
 
     // Check for chain settings (Params() calls are only valid after this clause)
     try {
-        SelectParams(gArgs.GetChainName());
+        SelectParams(args.GetChainName(), args);
     } catch (const std::exception& e) {
         tfm::format(std::cerr, "Error: %s\n", e.what());
         return EXIT_FAILURE;
     }
 
-    fCreateBlank = gArgs.GetBoolArg("-create", false);
+    fCreateBlank = args.GetBoolArg("-create", false);
 
-    if (argc < 2 || HelpRequested(gArgs) || gArgs.IsArgSet("-version")) {
+    if (argc < 2 || HelpRequested(args) || args.IsArgSet("-version")) {
         // First part of help message is specific to this utility
         std::string strUsage = PACKAGE_NAME " bitcoin-tx utility version " + FormatFullVersion() + "\n";
-        if (!gArgs.IsArgSet("-version")) {
+        if (!args.IsArgSet("-version")) {
             strUsage += "\n"
                 "Usage:  bitcoin-tx [options] <hex-tx> [commands]  Update hex-encoded bitcoin transaction\n"
                 "or:     bitcoin-tx [options] -create [commands]   Create hex-encoded bitcoin transaction\n"
                 "\n";
-            strUsage += gArgs.GetHelpMessage();
+            strUsage += args.GetHelpMessage();
         }
 
         tfm::format(std::cout, "%s", strUsage);
@@ -767,11 +767,11 @@ static void OutputTxHex(const CTransaction& tx)
     tfm::format(std::cout, "%s\n", strHex);
 }
 
-static void OutputTx(const CTransaction& tx)
+static void OutputTx(const CTransaction& tx, const ArgsManager& args)
 {
-    if (gArgs.GetBoolArg("-json", false))
+    if (args.GetBoolArg("-json", false))
         OutputTxJSON(tx);
-    else if (gArgs.GetBoolArg("-txid", false))
+    else if (args.GetBoolArg("-txid", false))
         OutputTxHash(tx);
     else
         OutputTxHex(tx);
@@ -795,7 +795,7 @@ static std::string readStdin()
     return TrimString(ret);
 }
 
-static int CommandLineRawTx(int argc, char* argv[])
+static int CommandLineRawTx(int argc, char* argv[], ArgsManager& argsman)
 {
     std::string strPrint;
     int nRet = 0;
@@ -841,7 +841,7 @@ static int CommandLineRawTx(int argc, char* argv[])
             MutateTx(tx, key, value);
         }
 
-        OutputTx(CTransaction(tx));
+        OutputTx(CTransaction(tx), argsman);
     }
     catch (const std::exception& e) {
         strPrint = std::string("error: ") + e.what();
@@ -860,10 +860,11 @@ static int CommandLineRawTx(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
+    ArgsManager args;
     SetupEnvironment();
 
     try {
-        int ret = AppInitRawTx(argc, argv);
+        int ret = AppInitRawTx(argc, argv, args);
         if (ret != CONTINUE_EXECUTION)
             return ret;
     }
@@ -877,7 +878,7 @@ int main(int argc, char* argv[])
 
     int ret = EXIT_FAILURE;
     try {
-        ret = CommandLineRawTx(argc, argv);
+        ret = CommandLineRawTx(argc, argv, args);
     }
     catch (const std::exception& e) {
         PrintExceptionContinue(&e, "CommandLineRawTx()");

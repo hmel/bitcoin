@@ -94,7 +94,7 @@ struct DBHashKey {
 static std::map<BlockFilterType, BlockFilterIndex> g_filter_indexes;
 
 BlockFilterIndex::BlockFilterIndex(BlockFilterType filter_type, fs::path data_dir_net, size_t n_cache_size, bool f_memory, bool f_wipe)
-    : m_filter_type(filter_type)
+        : m_filter_type(filter_type), m_data_dir_net(data_dir_net)
 {
     const std::string& filter_name = BlockFilterTypeName(filter_type);
     if (filter_name.empty()) throw std::invalid_argument("unknown filter_type");
@@ -214,7 +214,7 @@ bool BlockFilterIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex
     uint256 prev_header;
 
     if (pindex->nHeight > 0) {
-        if (!UndoReadFromDisk(block_undo, pindex)) {
+        if (!UndoReadFromDisk(block_undo, pindex, m_data_dir_net)) {
             return false;
         }
 

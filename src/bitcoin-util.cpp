@@ -70,7 +70,7 @@ static int AppInitUtil(ArgsManager& args, int argc, char* argv[])
 
     // Check for chain settings (Params() calls are only valid after this clause)
     try {
-        SelectParams(args.GetChainName());
+        SelectParams(args.GetChainName(), args);
     } catch (const std::exception& e) {
         tfm::format(std::cerr, "Error: %s\n", e.what());
         return EXIT_FAILURE;
@@ -151,7 +151,7 @@ __declspec(dllexport) int main(int argc, char* argv[])
 int main(int argc, char* argv[])
 #endif
 {
-    ArgsManager& args = gArgs;
+    ArgsManager args;
     SetupEnvironment();
 
     try {

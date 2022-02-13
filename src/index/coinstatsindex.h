@@ -20,6 +20,8 @@ private:
     std::string m_name;
     std::unique_ptr<BaseIndex::DB> m_db;
 
+    fs::path m_data_dir_net;
+
     MuHash3072 m_muhash;
     uint64_t m_transaction_output_count{0};
     uint64_t m_bogo_size{0};

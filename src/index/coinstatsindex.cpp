@@ -101,7 +101,7 @@ struct DBHashKey {
 
 std::unique_ptr<CoinStatsIndex> g_coin_stats_index;
 
-CoinStatsIndex::CoinStatsIndex(const fs::path& data_dir_net, size_t n_cache_size, bool f_memory, bool f_wipe)
+CoinStatsIndex::CoinStatsIndex(const fs::path& data_dir_net, size_t n_cache_size, bool f_memory, bool f_wipe) : m_data_dir_net(data_dir_net)
 {
     fs::path path{data_dir_net / "indexes" / "coinstats"};
     fs::create_directories(path);
@@ -117,7 +117,7 @@ bool CoinStatsIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
 
     // Ignore genesis block
     if (pindex->nHeight > 0) {
-        if (!UndoReadFromDisk(block_undo, pindex)) {
+        if (!UndoReadFromDisk(block_undo, pindex, m_data_dir_net)) {
             return false;
         }
 
@@ -284,7 +284,7 @@ bool CoinStatsIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* n
         do {
             CBlock block;
 
-            if (!ReadBlockFromDisk(block, iter_tip, consensus_params)) {
+            if (!ReadBlockFromDisk(block, iter_tip, consensus_params, Params().args())) {
                 return error("%s: Failed to read block %s from disk",
                              __func__, iter_tip->GetBlockHash().ToString());
             }
@@ -391,7 +391,7 @@ bool CoinStatsIndex::ReverseBlock(const CBlock& block, const CBlockIndex* pindex
 
     // Ignore genesis block
     if (pindex->nHeight > 0) {
-        if (!UndoReadFromDisk(block_undo, pindex)) {
+        if (!UndoReadFromDisk(block_undo, pindex, m_data_dir_net)) {
             return false;
         }
 

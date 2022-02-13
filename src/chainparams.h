@@ -123,8 +123,10 @@ public:
     const MapAssumeutxo& Assumeutxo() const { return m_assumeutxo_data; }
 
     const ChainTxData& TxData() const { return chainTxData; }
+
+    const ArgsManager& args() const { return m_args; }
 protected:
-    CChainParams() {}
+    CChainParams(const ArgsManager& args) : m_args(args) {}
 
     Consensus::Params consensus;
     CMessageHeader::MessageStartChars pchMessageStart;
@@ -145,6 +147,7 @@ protected:
     CCheckpointData checkpointData;
     MapAssumeutxo m_assumeutxo_data;
     ChainTxData chainTxData;
+    const ArgsManager& m_args;
 };
 
 /**

@@ -75,19 +75,19 @@ static bool WalletAppInit(ArgsManager& args, int argc, char* argv[])
     // check for printtoconsole, allow -debug
     LogInstance().m_print_to_console = args.GetBoolArg("-printtoconsole", args.GetBoolArg("-debug", false));
 
-    if (!CheckDataDirOption()) {
+    if (!CheckDataDirOption(args)) {
         tfm::format(std::cerr, "Error: Specified data directory \"%s\" does not exist.\n", args.GetArg("-datadir", ""));
         return false;
     }
     // Check for chain settings (Params() calls are only valid after this clause)
-    SelectParams(args.GetChainName());
+    SelectParams(args.GetChainName(), args);
 
     return true;
 }
 
 int main(int argc, char* argv[])
 {
-    ArgsManager& args = gArgs;
+    ArgsManager args;
 #ifdef WIN32
     util::WinCmdLineArgs winArgs;
     std::tie(argc, argv) = winArgs.get();

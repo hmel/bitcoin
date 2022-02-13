@@ -44,7 +44,7 @@ std::optional<ChainstateLoadingError> LoadChainstate(bool fReset,
         pblocktree->WriteReindexing(true);
         //If we're reindexing in prune mode, wipe away unusable block files and all undo data files
         if (fPruneMode)
-            CleanupBlockRevFiles();
+            CleanupBlockRevFiles(chainman.args().GetDataDirNet());
     }
 
     if (shutdown_requested && shutdown_requested()) return ChainstateLoadingError::SHUTDOWN_PROBED;

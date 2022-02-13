@@ -299,13 +299,13 @@ static bool rest_block(const std::any& context,
         if (IsBlockPruned(pblockindex))
             return RESTERR(req, HTTP_NOT_FOUND, hashStr + " not available (pruned data)");
 
-        if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
+        if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus(), Params().args()))
             return RESTERR(req, HTTP_NOT_FOUND, hashStr + " not found");
     }
 
     switch (rf) {
     case RetFormat::BINARY: {
-        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
+        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags(Params().args()));
         ssBlock << block;
         std::string binaryBlock = ssBlock.str();
         req->WriteHeader("Content-Type", "application/octet-stream");
@@ -314,7 +314,7 @@ static bool rest_block(const std::any& context,
     }
 
     case RetFormat::HEX: {
-        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
+        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags(Params().args()));
         ssBlock << block;
         std::string strHex = HexStr(ssBlock) + "\n";
         req->WriteHeader("Content-Type", "text/plain");
@@ -323,7 +323,7 @@ static bool rest_block(const std::any& context,
     }
 
     case RetFormat::JSON: {
-        UniValue objBlock = blockToJSON(block, tip, pblockindex, tx_verbosity);
+        UniValue objBlock = blockToJSON(block, tip, pblockindex, tx_verbosity, Params().args());
         std::string strJSON = objBlock.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
         req->WriteReply(HTTP_OK, strJSON);
@@ -587,7 +587,7 @@ static bool rest_mempool_info(const std::any& context, HTTPRequest* req, const s
 
     switch (rf) {
     case RetFormat::JSON: {
-        UniValue mempoolInfoObject = MempoolInfoToJSON(*mempool);
+        UniValue mempoolInfoObject = MempoolInfoToJSON(*mempool, Params().args());
 
         std::string strJSON = mempoolInfoObject.write() + "\n";
         req->WriteHeader("Content-Type", "application/json");
@@ -648,7 +648,7 @@ static bool rest_tx(const std::any& context, HTTPRequest* req, const std::string
 
     switch (rf) {
     case RetFormat::BINARY: {
-        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
+        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags(Params().args()));
         ssTx << tx;
 
         std::string binaryTx = ssTx.str();
@@ -658,7 +658,7 @@ static bool rest_tx(const std::any& context, HTTPRequest* req, const std::string
     }
 
     case RetFormat::HEX: {
-        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
+        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags(Params().args()));
         ssTx << tx;
 
         std::string strHex = HexStr(ssTx) + "\n";
