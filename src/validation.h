@@ -997,6 +997,8 @@ public:
     //! ResizeCoinsCaches() as needed.
     void MaybeRebalanceCaches() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
+    const ArgsManager& args() const { return m_args; }
+
     ChainstateManager(const ArgsManager& args) : m_args(args), m_blockman(args) {}
     ~ChainstateManager() {
         LOCK(::cs_main);

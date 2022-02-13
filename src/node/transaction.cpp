@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <consensus/validation.h>
 #include <index/txindex.h>
 #include <net.h>
@@ -122,7 +123,7 @@ TransactionError BroadcastTransaction(NodeContext& node, const CTransactionRef t
     return TransactionError::OK;
 }
 
-CTransactionRef GetTransaction(const CBlockIndex* const block_index, const CTxMemPool* const mempool, const uint256& hash, const Consensus::Params& consensusParams, uint256& hashBlock)
+CTransactionRef GetTransaction(const CBlockIndex* const block_index, const CTxMemPool* const mempool, const uint256& hash, const Consensus::Params& consensusParams, uint256& hashBlock, const ArgsManager& args)
 {
     if (mempool && !block_index) {
         CTransactionRef ptx = mempool->get(hash);
@@ -131,7 +132,7 @@ CTransactionRef GetTransaction(const CBlockIndex* const block_index, const CTxMe
     if (g_txindex) {
         CTransactionRef tx;
         uint256 block_hash;
-        if (g_txindex->FindTx(hash, block_hash, tx)) {
+        if (g_txindex->FindTx(hash, block_hash, tx, args)) {
             if (!block_index || block_index->GetBlockHash() == block_hash) {
                 // Don't return the transaction if the provided block hash doesn't match.
                 // The case where a transaction appears in multiple blocks (e.g. reorgs or

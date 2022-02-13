@@ -3,6 +3,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <fstream>
 #include <rpc/request.h>
 
 #include <fs.h>
@@ -84,7 +85,7 @@ bool GenerateAuthCookie(const ArgsManager& args, std::string* cookie_out)
      * these are set to 077 in init.cpp unless overridden with -sysperms.
      */
     std::ofstream file;
-    fs::path filepath_tmp = GetAuthCookieFile(true);
+    fs::path filepath_tmp = GetAuthCookieFile(args, true);
     file.open(filepath_tmp);
     if (!file.is_open()) {
         LogPrintf("Unable to open cookie authentication file %s for writing\n", fs::PathToString(filepath_tmp));
