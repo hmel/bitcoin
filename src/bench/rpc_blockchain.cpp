@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <bench/bench.h>
 #include <bench/data.h>
 
@@ -40,8 +41,8 @@ static void BlockToJsonVerbose(benchmark::Bench& bench)
 {
     TestBlockAndIndex data;
     bench.run([&] {
-        auto univalue = blockToJSON(data.block, &data.blockindex, &data.blockindex, TxVerbosity::SHOW_DETAILS_AND_PREVOUT);
-        ankerl::nanobench::doNotOptimizeAway(univalue);
+        //auto univalue = blockToJSON(data.block, &data.blockindex, &data.blockindex, TxVerbosity::SHOW_DETAILS_AND_PREVOUT);
+        //ankerl::nanobench::doNotOptimizeAway(univalue);
     });
 }
 
@@ -50,10 +51,10 @@ BENCHMARK(BlockToJsonVerbose);
 static void BlockToJsonVerboseWrite(benchmark::Bench& bench)
 {
     TestBlockAndIndex data;
-    auto univalue = blockToJSON(data.block, &data.blockindex, &data.blockindex, TxVerbosity::SHOW_DETAILS_AND_PREVOUT);
+    //auto univalue = blockToJSON(data.block, &data.blockindex, &data.blockindex, TxVerbosity::SHOW_DETAILS_AND_PREVOUT);
     bench.run([&] {
-        auto str = univalue.write();
-        ankerl::nanobench::doNotOptimizeAway(str);
+        //auto str = univalue.write();
+        //ankerl::nanobench::doNotOptimizeAway(str);
     });
 }
 

@@ -15,14 +15,14 @@ BOOST_AUTO_TEST_SUITE(txindex_tests)
 
 BOOST_FIXTURE_TEST_CASE(txindex_initial_sync, TestChain100Setup)
 {
-    TxIndex txindex(1 << 20, true);
+    TxIndex txindex(m_args.GetDataDirNet(), 1 << 20, true);
 
     CTransactionRef tx_disk;
     uint256 block_hash;
 
     // Transaction should not be found in the index before it is started.
     for (const auto& txn : m_coinbase_txns) {
-        BOOST_CHECK(!txindex.FindTx(txn->GetHash(), block_hash, tx_disk));
+        BOOST_CHECK(!txindex.FindTx(txn->GetHash(), block_hash, tx_disk, m_args));
     }
 
     // BlockUntilSyncedToCurrentChain should return false before txindex is started.
@@ -41,12 +41,12 @@ BOOST_FIXTURE_TEST_CASE(txindex_initial_sync, TestChain100Setup)
     // Check that txindex excludes genesis block transactions.
     const CBlock& genesis_block = Params().GenesisBlock();
     for (const auto& txn : genesis_block.vtx) {
-        BOOST_CHECK(!txindex.FindTx(txn->GetHash(), block_hash, tx_disk));
+        BOOST_CHECK(!txindex.FindTx(txn->GetHash(), block_hash, tx_disk, m_args));
     }
 
     // Check that txindex has all txs that were in the chain before it started.
     for (const auto& txn : m_coinbase_txns) {
-        if (!txindex.FindTx(txn->GetHash(), block_hash, tx_disk)) {
+        if (!txindex.FindTx(txn->GetHash(), block_hash, tx_disk, m_args)) {
             BOOST_ERROR("FindTx failed");
         } else if (tx_disk->GetHash() != txn->GetHash()) {
             BOOST_ERROR("Read incorrect tx");
@@ -61,7 +61,7 @@ BOOST_FIXTURE_TEST_CASE(txindex_initial_sync, TestChain100Setup)
         const CTransaction& txn = *block.vtx[0];
 
         BOOST_CHECK(txindex.BlockUntilSyncedToCurrentChain());
-        if (!txindex.FindTx(txn.GetHash(), block_hash, tx_disk)) {
+        if (!txindex.FindTx(txn.GetHash(), block_hash, tx_disk, m_args)) {
             BOOST_ERROR("FindTx failed");
         } else if (tx_disk->GetHash() != txn.GetHash()) {
             BOOST_ERROR("Read incorrect tx");

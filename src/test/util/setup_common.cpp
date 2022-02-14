@@ -88,7 +88,7 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
     : m_path_root{fs::temp_directory_path() / "test_common_" PACKAGE_NAME / g_insecure_rand_ctx_temp_path.rand256().ToString()},
       m_args{}
 {
-    m_node.args = &gArgs;
+    m_node.args = &m_args;
     std::vector<const char*> arguments = Cat(
         {
             "dummy",
@@ -107,8 +107,8 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
     util::ThreadRename("test");
     fs::create_directories(m_path_root);
     m_args.ForceSetArg("-datadir", fs::PathToString(m_path_root));
-    gArgs.ForceSetArg("-datadir", fs::PathToString(m_path_root));
-    gArgs.ClearPathCache();
+    m_args.ForceSetArg("-datadir", fs::PathToString(m_path_root));
+    m_args.ClearPathCache();
     {
         SetupServerArgs(*m_node.args);
         std::string error;
@@ -117,7 +117,7 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
             throw std::runtime_error{error};
         }
     }
-    SelectParams(chainName);
+    SelectParams(chainName, m_args);
     SeedInsecureRand();
     if (G_TEST_LOG_FUN) LogInstance().PushBackCallback(G_TEST_LOG_FUN);
     InitLogging(*m_node.args);
@@ -127,8 +127,8 @@ BasicTestingSetup::BasicTestingSetup(const std::string& chainName, const std::ve
     ECC_Start();
     SetupEnvironment();
     SetupNetworking();
-    InitSignatureCache();
-    InitScriptExecutionCache();
+    InitSignatureCache(m_args);
+    InitScriptExecutionCache(m_args);
     m_node.chain = interfaces::MakeChain(m_node);
     fCheckBlockIndex = true;
     static bool noui_connected = false;
@@ -143,7 +143,7 @@ BasicTestingSetup::~BasicTestingSetup()
     SetMockTime(0s); // Reset mocktime for following tests
     LogInstance().DisconnectTestLogger();
     fs::remove_all(m_path_root);
-    gArgs.ClearArgs();
+    m_args.ClearArgs();
     ECC_Stop();
 }
 
@@ -156,13 +156,13 @@ ChainTestingSetup::ChainTestingSetup(const std::string& chainName, const std::ve
     m_node.scheduler->m_service_thread = std::thread(util::TraceThread, "scheduler", [&] { m_node.scheduler->serviceQueue(); });
     GetMainSignals().RegisterBackgroundSignalScheduler(*m_node.scheduler);
 
-    m_node.fee_estimator = std::make_unique<CBlockPolicyEstimator>();
+    m_node.fee_estimator = std::make_unique<CBlockPolicyEstimator>(m_args.GetDataDirNet());
     m_node.mempool = std::make_unique<CTxMemPool>(m_node.fee_estimator.get(), 1);
 
     m_cache_sizes = CalculateCacheSizes(m_args);
 
-    m_node.chainman = std::make_unique<ChainstateManager>();
-    m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<CBlockTreeDB>(m_cache_sizes.block_tree_db, true);
+    m_node.chainman = std::make_unique<ChainstateManager>(m_args);
+    m_node.chainman->m_blockman.m_block_tree_db = std::make_unique<CBlockTreeDB>(m_args.GetDataDirNet(), m_cache_sizes.block_tree_db, true);
 
     // Start script-checking threads. Set g_parallel_script_checks to true so they are used.
     constexpr int script_check_threads = 2;
@@ -227,7 +227,7 @@ TestingSetup::TestingSetup(const std::string& chainName, const std::vector<const
                                                /*deterministic=*/false,
                                                m_node.args->GetIntArg("-checkaddrman", 0));
     m_node.banman = std::make_unique<BanMan>(m_args.GetDataDirBase() / "banlist", nullptr, DEFAULT_MISBEHAVING_BANTIME);
-    m_node.connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman); // Deterministic randomness for tests.
+    m_node.connman = std::make_unique<CConnman>(0x1337, 0x1337, *m_node.addrman, m_args); // Deterministic randomness for tests.
     m_node.peerman = PeerManager::make(chainparams, *m_node.connman, *m_node.addrman,
                                        m_node.banman.get(), *m_node.chainman,
                                        *m_node.mempool, false);

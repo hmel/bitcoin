@@ -16,16 +16,15 @@ bool ComputeFilter(BlockFilterType filter_type, const CBlockIndex* block_index, 
     LOCK(::cs_main);
 
     CBlock block;
-    if (!ReadBlockFromDisk(block, block_index->GetBlockPos(), Params().GetConsensus())) {
+    if (!ReadBlockFromDisk(block, block_index->GetBlockPos(), Params().GetConsensus(), Params().args())) {
         return false;
     }
 
     CBlockUndo block_undo;
-    if (block_index->nHeight > 0 && !UndoReadFromDisk(block_undo, block_index)) {
+    if (block_index->nHeight > 0 && !UndoReadFromDisk(block_undo, block_index, Params().args().GetDataDirNet())) {
         return false;
     }
 
     filter = BlockFilter(filter_type, block, block_undo);
     return true;
 }
-

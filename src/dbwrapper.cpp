@@ -145,7 +145,7 @@ CDBWrapper::CDBWrapper(const fs::path& path, bool force_compact_db, size_t nCach
     dbwrapper_private::HandleError(status);
     LogPrintf("Opened LevelDB successfully\n");
 
-    //if (gArgs.GetBoolArg("-forcecompactdb", false)) {
+    //if (args.GetBoolArg("-forcecompactdb", false)) {
     if (force_compact_db) {
         LogPrintf("Starting database compaction of %s\n", fs::PathToString(path));
         pdb->CompactRange(nullptr, nullptr);

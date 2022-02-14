@@ -86,7 +86,7 @@ public:
 };
 
 /** Get BerkeleyEnvironment given a directory path. */
-std::shared_ptr<BerkeleyEnvironment> GetBerkeleyEnv(const fs::path& env_directory);
+std::shared_ptr<BerkeleyEnvironment> GetBerkeleyEnv(const fs::path& env_directory, const ArgsManager& args);
 
 class BerkeleyBatch;
 

@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_SUITE(coinstatsindex_tests)
 
 BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
 {
-    CoinStatsIndex coin_stats_index{1 << 20, true};
+    CoinStatsIndex coin_stats_index{m_args.GetDataDirNet(), 1 << 20, true};
 
     CCoinsStats coin_stats{CoinStatsHashType::MUHASH};
     const CBlockIndex* block_index;

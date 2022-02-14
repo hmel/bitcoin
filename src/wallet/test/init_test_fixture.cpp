@@ -20,7 +20,7 @@ InitWalletDirTestingSetup::InitWalletDirTestingSetup(const std::string& chainNam
     std::string sep;
     sep += fs::path::preferred_separator;
 
-    m_datadir = gArgs.GetDataDirNet();
+    m_datadir = m_args.GetDataDirNet();
     m_cwd = fs::current_path();
 
     m_walletdir_path_cases["default"] = m_datadir / "wallets";
@@ -42,7 +42,7 @@ InitWalletDirTestingSetup::InitWalletDirTestingSetup(const std::string& chainNam
 
 InitWalletDirTestingSetup::~InitWalletDirTestingSetup()
 {
-    gArgs.LockSettings([&](util::Settings& settings) {
+    m_args.LockSettings([&](util::Settings& settings) {
         settings.forced_settings.erase("walletdir");
     });
     fs::current_path(m_cwd);
@@ -50,6 +50,6 @@ InitWalletDirTestingSetup::~InitWalletDirTestingSetup()
 
 void InitWalletDirTestingSetup::SetWalletDir(const fs::path& walletdir_path)
 {
-    gArgs.ForceSetArg("-walletdir", fs::PathToString(walletdir_path));
+    m_args.ForceSetArg("-walletdir", fs::PathToString(walletdir_path));
 }
 } // namespace wallet

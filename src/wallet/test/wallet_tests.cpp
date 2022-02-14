@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <wallet/wallet.h>
 
 #include <any>
@@ -45,14 +46,14 @@ static_assert(WALLET_INCREMENTAL_RELAY_FEE >= DEFAULT_INCREMENTAL_RELAY_FEE, "wa
 
 BOOST_FIXTURE_TEST_SUITE(wallet_tests, WalletTestingSetup)
 
-static const std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context)
+static const std::shared_ptr<CWallet> TestLoadWallet(WalletContext& context, const ArgsManager& args)
 {
     DatabaseOptions options;
     options.create_flags = WALLET_FLAG_DESCRIPTORS;
     DatabaseStatus status;
     bilingual_str error;
     std::vector<bilingual_str> warnings;
-    auto database = MakeWalletDatabase("", options, status, error);
+    auto database = MakeWalletDatabase("", options, status, error, args);
     auto wallet = CWallet::Create(context, "", std::move(database), options.create_flags, error, warnings);
     if (context.chain) {
         wallet->postInitProcess();
@@ -146,7 +147,7 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
         file_number = oldTip->GetBlockPos().nFile;
         Assert(m_node.chainman)->m_blockman.PruneOneBlockFile(file_number);
     }
-    UnlinkPrunedFiles({file_number});
+    UnlinkPrunedFiles({file_number}, m_args.GetDataDirNet(), m_args.GetBoolArg("-fastprune", false));
 
     // Verify ScanForWalletTransactions only picks transactions in the new block
     // file.
@@ -174,7 +175,7 @@ BOOST_FIXTURE_TEST_CASE(scan_for_wallet_transactions, TestChain100Setup)
         file_number = newTip->GetBlockPos().nFile;
         Assert(m_node.chainman)->m_blockman.PruneOneBlockFile(file_number);
     }
-    UnlinkPrunedFiles({file_number});
+    UnlinkPrunedFiles({file_number}, m_args.GetDataDirNet(), m_args.GetBoolArg("-fastprune", false));
 
     // Verify ScanForWalletTransactions scans no blocks.
     {
@@ -211,7 +212,7 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
         file_number = oldTip->GetBlockPos().nFile;
         Assert(m_node.chainman)->m_blockman.PruneOneBlockFile(file_number);
     }
-    UnlinkPrunedFiles({file_number});
+    UnlinkPrunedFiles({file_number}, m_args.GetDataDirNet(), m_args.GetBoolArg("-fastprune", false));
 
     // Verify importmulti RPC returns failure for a key whose creation time is
     // before the missing block, and success for a key whose creation time is
@@ -221,7 +222,7 @@ BOOST_FIXTURE_TEST_CASE(importmulti_rescan, TestChain100Setup)
         wallet->SetupLegacyScriptPubKeyMan();
         WITH_LOCK(wallet->cs_wallet, wallet->SetLastBlockProcessed(newTip->nHeight, newTip->GetBlockHash()));
         WalletContext context;
-        context.args = &gArgs;
+        context.args = &m_args;
         AddWallet(context, wallet);
         UniValue keys;
         keys.setArray();
@@ -277,12 +278,12 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
     SetMockTime(KEY_TIME);
     m_coinbase_txns.emplace_back(CreateAndProcessBlock({}, GetScriptForRawPubKey(coinbaseKey.GetPubKey())).vtx[0]);
 
-    std::string backup_file = fs::PathToString(gArgs.GetDataDirNet() / "wallet.backup");
+    std::string backup_file = fs::PathToString(m_args.GetDataDirNet() / "wallet.backup");
 
     // Import key into wallet and call dumpwallet to create backup file.
     {
         WalletContext context;
-        context.args = &gArgs;
+        context.args = &m_args;
         const std::shared_ptr<CWallet> wallet = std::make_shared<CWallet>(m_node.chain.get(), "", m_args, CreateDummyWalletDatabase());
         {
             auto spk_man = wallet->GetOrCreateLegacyScriptPubKeyMan();
@@ -310,7 +311,7 @@ BOOST_FIXTURE_TEST_CASE(importwallet_rescan, TestChain100Setup)
         wallet->SetupLegacyScriptPubKeyMan();
 
         WalletContext context;
-        context.args = &gArgs;
+        context.args = &m_args;
         JSONRPCRequest request;
         request.context = &context;
         request.params.setArray();
@@ -523,7 +524,7 @@ public:
         CAmount fee;
         int changePos = -1;
         bilingual_str error;
-        CCoinControl dummy;
+        CCoinControl dummy{m_args};
         FeeCalculation fee_calc_out;
         {
             BOOST_CHECK(CreateTransaction(*wallet, {recipient}, tx, fee, changePos, error, dummy, fee_calc_out));
@@ -716,12 +717,12 @@ BOOST_FIXTURE_TEST_CASE(wallet_descriptor_test, BasicTestingSetup)
 //! rescanning where new transactions in new blocks could be lost.
 BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
 {
-    gArgs.ForceSetArg("-unsafesqlitesync", "1");
+    m_args.ForceSetArg("-unsafesqlitesync", "1");
     // Create new wallet with known key and unload it.
     WalletContext context;
-    context.args = &gArgs;
+    context.args = &m_args;
     context.chain = m_node.chain.get();
-    auto wallet = TestLoadWallet(context);
+    auto wallet = TestLoadWallet(context, m_args);
     CKey key;
     key.MakeNewKey(true);
     AddKey(*wallet, key);
@@ -761,7 +762,7 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
 
     // Reload wallet and make sure new transactions are detected despite events
     // being blocked
-    wallet = TestLoadWallet(context);
+    wallet = TestLoadWallet(context, m_args);
     BOOST_CHECK(rescan_completed);
     BOOST_CHECK_EQUAL(addtx_count, 2);
     {
@@ -797,7 +798,7 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
             BOOST_CHECK(m_node.chain->broadcastTransaction(MakeTransactionRef(mempool_tx), DEFAULT_TRANSACTION_MAXFEE, false, error));
             SyncWithValidationInterfaceQueue();
         });
-    wallet = TestLoadWallet(context);
+    wallet = TestLoadWallet(context, m_args);
     BOOST_CHECK_EQUAL(addtx_count, 4);
     {
         LOCK(wallet->cs_wallet);
@@ -812,19 +813,19 @@ BOOST_FIXTURE_TEST_CASE(CreateWallet, TestChain100Setup)
 BOOST_FIXTURE_TEST_CASE(CreateWalletWithoutChain, BasicTestingSetup)
 {
     WalletContext context;
-    context.args = &gArgs;
-    auto wallet = TestLoadWallet(context);
+    context.args = &m_args;
+    auto wallet = TestLoadWallet(context, m_args);
     BOOST_CHECK(wallet);
     UnloadWallet(std::move(wallet));
 }
 
 BOOST_FIXTURE_TEST_CASE(ZapSelectTx, TestChain100Setup)
 {
-    gArgs.ForceSetArg("-unsafesqlitesync", "1");
+    m_args.ForceSetArg("-unsafesqlitesync", "1");
     WalletContext context;
-    context.args = &gArgs;
+    context.args = &m_args;
     context.chain = m_node.chain.get();
-    auto wallet = TestLoadWallet(context);
+    auto wallet = TestLoadWallet(context, m_args);
     CKey key;
     key.MakeNewKey(true);
     AddKey(*wallet, key);
