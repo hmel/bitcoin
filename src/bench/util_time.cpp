@@ -6,14 +6,14 @@
 
 #include <util/time.h>
 
-static void BenchTimeDeprecated(benchmark::Bench& bench)
+static void BenchTimeDeprecated(benchmark::Bench& bench, const ArgsManager& args)
 {
     bench.run([&] {
         (void)GetTime();
     });
 }
 
-static void BenchTimeMock(benchmark::Bench& bench)
+static void BenchTimeMock(benchmark::Bench& bench, const ArgsManager& args)
 {
     SetMockTime(111);
     bench.run([&] {
@@ -22,14 +22,14 @@ static void BenchTimeMock(benchmark::Bench& bench)
     SetMockTime(0);
 }
 
-static void BenchTimeMillis(benchmark::Bench& bench)
+static void BenchTimeMillis(benchmark::Bench& bench, const ArgsManager& args)
 {
     bench.run([&] {
         (void)GetTime<std::chrono::milliseconds>();
     });
 }
 
-static void BenchTimeMillisSys(benchmark::Bench& bench)
+static void BenchTimeMillisSys(benchmark::Bench& bench, const ArgsManager& args)
 {
     bench.run([&] {
         (void)GetTimeMillis();

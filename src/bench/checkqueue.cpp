@@ -20,7 +20,7 @@ static const unsigned int QUEUE_BATCH_SIZE = 128;
 // This Benchmark tests the CheckQueue with a slightly realistic workload,
 // where checks all contain a prevector that is indirect 50% of the time
 // and there is a little bit of work done between calls to Add.
-static void CCheckQueueSpeedPrevectorJob(benchmark::Bench& bench)
+static void CCheckQueueSpeedPrevectorJob(benchmark::Bench& bench, const ArgsManager& args)
 {
     // We shouldn't ever be running with the checkqueue on a single core machine.
     if (GetNumCores() <= 1) return;

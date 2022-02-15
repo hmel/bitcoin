@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <hash.h>
 #include <net.h>
@@ -18,7 +19,8 @@
 
 void initialize_p2p_transport_serialization()
 {
-    SelectParams(CBaseChainParams::REGTEST);
+    ArgsManager args;
+    SelectParams(CBaseChainParams::REGTEST, args);
 }
 
 FUZZ_TARGET_INIT(p2p_transport_serialization, initialize_p2p_transport_serialization)

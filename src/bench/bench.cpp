@@ -4,6 +4,7 @@
 
 #include <bench/bench.h>
 
+#include <util/system.h>
 #include <fs.h>
 #include <test/util/setup_common.h>
 
@@ -76,12 +77,14 @@ void benchmark::BenchRunner::RunAll(const Args& args)
             bench.minEpochTime(min_time_ns / bench.epochs());
         }
 
+        ::ArgsManager argsman;
+
         if (args.asymptote.empty()) {
-            p.second(bench);
+            p.second(bench, argsman);
         } else {
             for (auto n : args.asymptote) {
                 bench.complexityN(n);
-                p.second(bench);
+                p.second(bench, argsman);
             }
             std::cout << bench.complexityBigO() << std::endl;
         }

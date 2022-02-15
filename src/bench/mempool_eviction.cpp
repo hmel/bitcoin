@@ -23,7 +23,7 @@ static void AddTx(const CTransactionRef& tx, const CAmount& nFee, CTxMemPool& po
 // Right now this is only testing eviction performance in an extremely small
 // mempool. Code needs to be written to generate a much wider variety of
 // unique transactions for a more meaningful performance measurement.
-static void MempoolEviction(benchmark::Bench& bench)
+static void MempoolEviction(benchmark::Bench& bench, const ArgsManager& args)
 {
     const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
 

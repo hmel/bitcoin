@@ -6,7 +6,7 @@
 #include <bench/bench.h>
 #include <common/bloom.h>
 
-static void RollingBloom(benchmark::Bench& bench)
+static void RollingBloom(benchmark::Bench& bench, const ArgsManager& args)
 {
     CRollingBloomFilter filter(120000, 0.000001);
     std::vector<unsigned char> data(32);
@@ -27,7 +27,7 @@ static void RollingBloom(benchmark::Bench& bench)
     });
 }
 
-static void RollingBloomReset(benchmark::Bench& bench)
+static void RollingBloomReset(benchmark::Bench& bench, const ArgsManager& args)
 {
     CRollingBloomFilter filter(120000, 0.000001);
     bench.run([&] {

@@ -20,13 +20,13 @@ using wallet::DBErrors;
 using wallet::GetBalance;
 using wallet::WALLET_FLAG_DESCRIPTORS;
 
-static void WalletBalance(benchmark::Bench& bench, const bool set_dirty, const bool add_mine)
+static void WalletBalance(benchmark::Bench& bench, const bool set_dirty, const bool add_mine, const ArgsManager& args)
 {
     const auto test_setup = MakeNoLogFileContext<const TestingSetup>();
 
     const auto& ADDRESS_WATCHONLY = ADDRESS_BCRT1_UNSPENDABLE;
 
-    CWallet wallet{test_setup->m_node.chain.get(), "", gArgs, CreateMockWalletDatabase()};
+    CWallet wallet{test_setup->m_node.chain.get(), "", args, CreateMockWalletDatabase(args)};
     {
         LOCK(wallet.cs_wallet);
         wallet.SetWalletFlag(WALLET_FLAG_DESCRIPTORS);
@@ -52,10 +52,10 @@ static void WalletBalance(benchmark::Bench& bench, const bool set_dirty, const b
     });
 }
 
-static void WalletBalanceDirty(benchmark::Bench& bench) { WalletBalance(bench, /* set_dirty */ true, /* add_mine */ true); }
-static void WalletBalanceClean(benchmark::Bench& bench) { WalletBalance(bench, /* set_dirty */ false, /* add_mine */ true); }
-static void WalletBalanceMine(benchmark::Bench& bench) { WalletBalance(bench, /* set_dirty */ false, /* add_mine */ true); }
-static void WalletBalanceWatch(benchmark::Bench& bench) { WalletBalance(bench, /* set_dirty */ false, /* add_mine */ false); }
+static void WalletBalanceDirty(benchmark::Bench& bench, const ArgsManager& args) { WalletBalance(bench, /* set_dirty */ true, /* add_mine */ true, args); }
+static void WalletBalanceClean(benchmark::Bench& bench, const ArgsManager& args) { WalletBalance(bench, /* set_dirty */ false, /* add_mine */ true, args); }
+static void WalletBalanceMine(benchmark::Bench& bench, const ArgsManager& args) { WalletBalance(bench, /* set_dirty */ false, /* add_mine */ true, args); }
+static void WalletBalanceWatch(benchmark::Bench& bench, const ArgsManager& args) { WalletBalance(bench, /* set_dirty */ false, /* add_mine */ false, args); }
 
 BENCHMARK(WalletBalanceDirty);
 BENCHMARK(WalletBalanceClean);

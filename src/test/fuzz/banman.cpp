@@ -41,9 +41,10 @@ static bool operator==(const CBanEntry& lhs, const CBanEntry& rhs)
 
 FUZZ_TARGET_INIT(banman, initialize_banman)
 {
+    ArgsManager args;
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
     SetMockTime(ConsumeTime(fuzzed_data_provider));
-    fs::path banlist_file = gArgs.GetDataDirNet() / "fuzzed_banlist";
+    fs::path banlist_file = args.GetDataDirNet() / "fuzzed_banlist";
 
     const bool start_with_corrupted_banlist{fuzzed_data_provider.ConsumeBool()};
     bool force_read_and_write_to_err{false};

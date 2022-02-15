@@ -36,7 +36,7 @@ static void EvictionProtectionCommon(
 
 /* Benchmarks */
 
-static void EvictionProtection0Networks250Candidates(benchmark::Bench& bench)
+static void EvictionProtection0Networks250Candidates(benchmark::Bench& bench, const ArgsManager& args)
 {
     EvictionProtectionCommon(
         bench,
@@ -47,7 +47,7 @@ static void EvictionProtection0Networks250Candidates(benchmark::Bench& bench)
         });
 }
 
-static void EvictionProtection1Networks250Candidates(benchmark::Bench& bench)
+static void EvictionProtection1Networks250Candidates(benchmark::Bench& bench, const ArgsManager& args)
 {
     EvictionProtectionCommon(
         bench,
@@ -63,7 +63,7 @@ static void EvictionProtection1Networks250Candidates(benchmark::Bench& bench)
         });
 }
 
-static void EvictionProtection2Networks250Candidates(benchmark::Bench& bench)
+static void EvictionProtection2Networks250Candidates(benchmark::Bench& bench, const ArgsManager& args)
 {
     EvictionProtectionCommon(
         bench,
@@ -81,7 +81,7 @@ static void EvictionProtection2Networks250Candidates(benchmark::Bench& bench)
         });
 }
 
-static void EvictionProtection3Networks050Candidates(benchmark::Bench& bench)
+static void EvictionProtection3Networks050Candidates(benchmark::Bench& bench, const ArgsManager& args)
 {
     EvictionProtectionCommon(
         bench,
@@ -99,7 +99,7 @@ static void EvictionProtection3Networks050Candidates(benchmark::Bench& bench)
         });
 }
 
-static void EvictionProtection3Networks100Candidates(benchmark::Bench& bench)
+static void EvictionProtection3Networks100Candidates(benchmark::Bench& bench, const ArgsManager& args)
 {
     EvictionProtectionCommon(
         bench,
@@ -117,7 +117,7 @@ static void EvictionProtection3Networks100Candidates(benchmark::Bench& bench)
         });
 }
 
-static void EvictionProtection3Networks250Candidates(benchmark::Bench& bench)
+static void EvictionProtection3Networks250Candidates(benchmark::Bench& bench, const ArgsManager& args)
 {
     EvictionProtectionCommon(
         bench,

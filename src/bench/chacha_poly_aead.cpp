@@ -59,32 +59,32 @@ static void CHACHA20_POLY1305_AEAD(benchmark::Bench& bench, size_t buffersize, b
     });
 }
 
-static void CHACHA20_POLY1305_AEAD_64BYTES_ONLY_ENCRYPT(benchmark::Bench& bench)
+static void CHACHA20_POLY1305_AEAD_64BYTES_ONLY_ENCRYPT(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20_POLY1305_AEAD(bench, BUFFER_SIZE_TINY, false);
 }
 
-static void CHACHA20_POLY1305_AEAD_256BYTES_ONLY_ENCRYPT(benchmark::Bench& bench)
+static void CHACHA20_POLY1305_AEAD_256BYTES_ONLY_ENCRYPT(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20_POLY1305_AEAD(bench, BUFFER_SIZE_SMALL, false);
 }
 
-static void CHACHA20_POLY1305_AEAD_1MB_ONLY_ENCRYPT(benchmark::Bench& bench)
+static void CHACHA20_POLY1305_AEAD_1MB_ONLY_ENCRYPT(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20_POLY1305_AEAD(bench, BUFFER_SIZE_LARGE, false);
 }
 
-static void CHACHA20_POLY1305_AEAD_64BYTES_ENCRYPT_DECRYPT(benchmark::Bench& bench)
+static void CHACHA20_POLY1305_AEAD_64BYTES_ENCRYPT_DECRYPT(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20_POLY1305_AEAD(bench, BUFFER_SIZE_TINY, true);
 }
 
-static void CHACHA20_POLY1305_AEAD_256BYTES_ENCRYPT_DECRYPT(benchmark::Bench& bench)
+static void CHACHA20_POLY1305_AEAD_256BYTES_ENCRYPT_DECRYPT(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20_POLY1305_AEAD(bench, BUFFER_SIZE_SMALL, true);
 }
 
-static void CHACHA20_POLY1305_AEAD_1MB_ENCRYPT_DECRYPT(benchmark::Bench& bench)
+static void CHACHA20_POLY1305_AEAD_1MB_ENCRYPT_DECRYPT(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20_POLY1305_AEAD(bench, BUFFER_SIZE_LARGE, true);
 }
@@ -100,17 +100,17 @@ static void HASH(benchmark::Bench& bench, size_t buffersize)
     });
 }
 
-static void HASH_64BYTES(benchmark::Bench& bench)
+static void HASH_64BYTES(benchmark::Bench& bench, const ArgsManager& args)
 {
     HASH(bench, BUFFER_SIZE_TINY);
 }
 
-static void HASH_256BYTES(benchmark::Bench& bench)
+static void HASH_256BYTES(benchmark::Bench& bench, const ArgsManager& args)
 {
     HASH(bench, BUFFER_SIZE_SMALL);
 }
 
-static void HASH_1MB(benchmark::Bench& bench)
+static void HASH_1MB(benchmark::Bench& bench, const ArgsManager& args)
 {
     HASH(bench, BUFFER_SIZE_LARGE);
 }

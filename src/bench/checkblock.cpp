@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <bench/bench.h>
 #include <bench/data.h>
 
@@ -14,7 +15,7 @@
 // a block off the wire, but before we can relay the block on to peers using
 // compact block relay.
 
-static void DeserializeBlockTest(benchmark::Bench& bench)
+static void DeserializeBlockTest(benchmark::Bench& bench, const ArgsManager& args)
 {
     CDataStream stream(benchmark::data::block413567, SER_NETWORK, PROTOCOL_VERSION);
     std::byte a{0};
@@ -28,7 +29,7 @@ static void DeserializeBlockTest(benchmark::Bench& bench)
     });
 }
 
-static void DeserializeAndCheckBlockTest(benchmark::Bench& bench)
+static void DeserializeAndCheckBlockTest(benchmark::Bench& bench, const ArgsManager& args)
 {
     CDataStream stream(benchmark::data::block413567, SER_NETWORK, PROTOCOL_VERSION);
     std::byte a{0};

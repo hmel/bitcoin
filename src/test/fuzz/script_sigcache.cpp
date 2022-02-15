@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <chainparamsbase.h>
 #include <key.h>
@@ -20,8 +21,9 @@ void initialize_script_sigcache()
 {
     static const ECCVerifyHandle ecc_verify_handle;
     ECC_Start();
-    SelectParams(CBaseChainParams::REGTEST);
-    InitSignatureCache();
+    ArgsManager args;
+    SelectParams(CBaseChainParams::REGTEST, args);
+    InitSignatureCache(args);
 }
 
 FUZZ_TARGET_INIT(script_sigcache, initialize_script_sigcache)

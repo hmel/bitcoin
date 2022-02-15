@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <key_io.h>
 #include <test/fuzz/fuzz.h>
@@ -13,9 +14,10 @@
 
 void initialize_key_io()
 {
+    ArgsManager args;
     static const ECCVerifyHandle verify_handle;
     ECC_Start();
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(CBaseChainParams::MAIN, args);
 }
 
 FUZZ_TARGET_INIT(key_io, initialize_key_io)

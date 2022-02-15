@@ -11,7 +11,7 @@
 #define ASIZE 2048
 #define MSIZE 2048
 
-static void BenchLockedPool(benchmark::Bench& bench)
+static void BenchLockedPool(benchmark::Bench& bench, const ArgsManager& args)
 {
     void *synth_base = reinterpret_cast<void*>(0x08000000);
     const size_t synth_size = 1024*1024;

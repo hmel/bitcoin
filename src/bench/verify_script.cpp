@@ -16,7 +16,7 @@
 
 // Microbenchmark for verification of a basic P2WPKH script. Can be easily
 // modified to measure performance of other types of scripts.
-static void VerifyScriptBench(benchmark::Bench& bench)
+static void VerifyScriptBench(benchmark::Bench& bench, const ArgsManager& args)
 {
     const ECCVerifyHandle verify_handle;
     ECC_Start();
@@ -75,7 +75,7 @@ static void VerifyScriptBench(benchmark::Bench& bench)
     ECC_Stop();
 }
 
-static void VerifyNestedIfScript(benchmark::Bench& bench)
+static void VerifyNestedIfScript(benchmark::Bench& bench, const ArgsManager& args)
 {
     std::vector<std::vector<unsigned char>> stack;
     CScript script;

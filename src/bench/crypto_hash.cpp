@@ -18,7 +18,7 @@
 /* Number of bytes to hash per iteration */
 static const uint64_t BUFFER_SIZE = 1000*1000;
 
-static void RIPEMD160(benchmark::Bench& bench)
+static void RIPEMD160(benchmark::Bench& bench, const ArgsManager& args)
 {
     uint8_t hash[CRIPEMD160::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -27,7 +27,7 @@ static void RIPEMD160(benchmark::Bench& bench)
     });
 }
 
-static void SHA1(benchmark::Bench& bench)
+static void SHA1(benchmark::Bench& bench, const ArgsManager& args)
 {
     uint8_t hash[CSHA1::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -36,7 +36,7 @@ static void SHA1(benchmark::Bench& bench)
     });
 }
 
-static void SHA256(benchmark::Bench& bench)
+static void SHA256(benchmark::Bench& bench, const ArgsManager& args)
 {
     uint8_t hash[CSHA256::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -45,7 +45,7 @@ static void SHA256(benchmark::Bench& bench)
     });
 }
 
-static void SHA3_256_1M(benchmark::Bench& bench)
+static void SHA3_256_1M(benchmark::Bench& bench, const ArgsManager& args)
 {
     uint8_t hash[SHA3_256::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -54,7 +54,7 @@ static void SHA3_256_1M(benchmark::Bench& bench)
     });
 }
 
-static void SHA256_32b(benchmark::Bench& bench)
+static void SHA256_32b(benchmark::Bench& bench, const ArgsManager& args)
 {
     std::vector<uint8_t> in(32,0);
     bench.batch(in.size()).unit("byte").run([&] {
@@ -64,7 +64,7 @@ static void SHA256_32b(benchmark::Bench& bench)
     });
 }
 
-static void SHA256D64_1024(benchmark::Bench& bench)
+static void SHA256D64_1024(benchmark::Bench& bench, const ArgsManager& args)
 {
     std::vector<uint8_t> in(64 * 1024, 0);
     bench.batch(in.size()).unit("byte").run([&] {
@@ -72,7 +72,7 @@ static void SHA256D64_1024(benchmark::Bench& bench)
     });
 }
 
-static void SHA512(benchmark::Bench& bench)
+static void SHA512(benchmark::Bench& bench, const ArgsManager& args)
 {
     uint8_t hash[CSHA512::OUTPUT_SIZE];
     std::vector<uint8_t> in(BUFFER_SIZE,0);
@@ -81,7 +81,7 @@ static void SHA512(benchmark::Bench& bench)
     });
 }
 
-static void SipHash_32b(benchmark::Bench& bench)
+static void SipHash_32b(benchmark::Bench& bench, const ArgsManager& args)
 {
     uint256 x;
     uint64_t k1 = 0;
@@ -90,7 +90,7 @@ static void SipHash_32b(benchmark::Bench& bench)
     });
 }
 
-static void FastRandom_32bit(benchmark::Bench& bench)
+static void FastRandom_32bit(benchmark::Bench& bench, const ArgsManager& args)
 {
     FastRandomContext rng(true);
     bench.run([&] {
@@ -98,7 +98,7 @@ static void FastRandom_32bit(benchmark::Bench& bench)
     });
 }
 
-static void FastRandom_1bit(benchmark::Bench& bench)
+static void FastRandom_1bit(benchmark::Bench& bench, const ArgsManager& args)
 {
     FastRandomContext rng(true);
     bench.run([&] {
@@ -106,7 +106,7 @@ static void FastRandom_1bit(benchmark::Bench& bench)
     });
 }
 
-static void MuHash(benchmark::Bench& bench)
+static void MuHash(benchmark::Bench& bench, const ArgsManager& args)
 {
     MuHash3072 acc;
     unsigned char key[32] = {0};
@@ -117,7 +117,7 @@ static void MuHash(benchmark::Bench& bench)
     });
 }
 
-static void MuHashMul(benchmark::Bench& bench)
+static void MuHashMul(benchmark::Bench& bench, const ArgsManager& args)
 {
     MuHash3072 acc;
     FastRandomContext rng(true);
@@ -128,7 +128,7 @@ static void MuHashMul(benchmark::Bench& bench)
     });
 }
 
-static void MuHashDiv(benchmark::Bench& bench)
+static void MuHashDiv(benchmark::Bench& bench, const ArgsManager& args)
 {
     MuHash3072 acc;
     FastRandomContext rng(true);
@@ -139,7 +139,7 @@ static void MuHashDiv(benchmark::Bench& bench)
     });
 }
 
-static void MuHashPrecompute(benchmark::Bench& bench)
+static void MuHashPrecompute(benchmark::Bench& bench, const ArgsManager& args)
 {
     MuHash3072 acc;
     FastRandomContext rng(true);

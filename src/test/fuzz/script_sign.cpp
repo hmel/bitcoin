@@ -28,7 +28,8 @@ void initialize_script_sign()
 {
     static const ECCVerifyHandle ecc_verify_handle;
     ECC_Start();
-    SelectParams(CBaseChainParams::REGTEST);
+    ArgsManager args;
+    SelectParams(CBaseChainParams::REGTEST, args);
 }
 
 FUZZ_TARGET_INIT(script_sign, initialize_script_sign)

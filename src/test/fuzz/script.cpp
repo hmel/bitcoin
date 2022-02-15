@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <compressor.h>
 #include <core_io.h>
@@ -35,7 +36,8 @@ void initialize_script()
     // Fuzzers using pubkey must hold an ECCVerifyHandle.
     static const ECCVerifyHandle verify_handle;
 
-    SelectParams(CBaseChainParams::REGTEST);
+    ArgsManager args;
+    SelectParams(CBaseChainParams::REGTEST, args);
 }
 
 FUZZ_TARGET_INIT(script, initialize_script)

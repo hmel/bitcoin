@@ -22,7 +22,7 @@ static_assert(std::is_trivially_default_constructible<trivial_t>::value,
               "expected trivial_t to be trivially constructible");
 
 template <typename T>
-static void PrevectorDestructor(benchmark::Bench& bench)
+static void PrevectorDestructor(benchmark::Bench& bench, const ArgsManager& args)
 {
     bench.batch(2).run([&] {
         prevector<28, T> t0;
@@ -33,7 +33,7 @@ static void PrevectorDestructor(benchmark::Bench& bench)
 }
 
 template <typename T>
-static void PrevectorClear(benchmark::Bench& bench)
+static void PrevectorClear(benchmark::Bench& bench, const ArgsManager& args)
 {
     prevector<28, T> t0;
     prevector<28, T> t1;
@@ -46,7 +46,7 @@ static void PrevectorClear(benchmark::Bench& bench)
 }
 
 template <typename T>
-static void PrevectorResize(benchmark::Bench& bench)
+static void PrevectorResize(benchmark::Bench& bench, const ArgsManager& args)
 {
     prevector<28, T> t0;
     prevector<28, T> t1;
@@ -59,7 +59,7 @@ static void PrevectorResize(benchmark::Bench& bench)
 }
 
 template <typename T>
-static void PrevectorDeserialize(benchmark::Bench& bench)
+static void PrevectorDeserialize(benchmark::Bench& bench, const ArgsManager& args)
 {
     CDataStream s0(SER_NETWORK, 0);
     prevector<28, T> t0;
@@ -80,16 +80,16 @@ static void PrevectorDeserialize(benchmark::Bench& bench)
     });
 }
 
-#define PREVECTOR_TEST(name)                                         \
-    static void Prevector##name##Nontrivial(benchmark::Bench& bench) \
-    {                                                                \
-        Prevector##name<nontrivial_t>(bench);                        \
-    }                                                                \
-    BENCHMARK(Prevector##name##Nontrivial);                          \
-    static void Prevector##name##Trivial(benchmark::Bench& bench)    \
-    {                                                                \
-        Prevector##name<trivial_t>(bench);                           \
-    }                                                                \
+#define PREVECTOR_TEST(name)                                                                  \
+    static void Prevector##name##Nontrivial(benchmark::Bench& bench, const ArgsManager& args) \
+    {                                                                                         \
+        Prevector##name<nontrivial_t>(bench, args);                                           \
+    }                                                                                         \
+    BENCHMARK(Prevector##name##Nontrivial);                                                   \
+    static void Prevector##name##Trivial(benchmark::Bench& bench, const ArgsManager& args)    \
+    {                                                                                         \
+        Prevector##name<trivial_t>(bench, args);                                              \
+    }                                                                                         \
     BENCHMARK(Prevector##name##Trivial);
 
 PREVECTOR_TEST(Clear)

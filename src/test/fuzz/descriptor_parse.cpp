@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <pubkey.h>
 #include <script/descriptor.h>
@@ -9,9 +10,10 @@
 
 void initialize_descriptor_parse()
 {
+    ArgsManager args;
     static const ECCVerifyHandle verify_handle;
     ECC_Start();
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(CBaseChainParams::MAIN, args);
 }
 
 FUZZ_TARGET_INIT(descriptor_parse, initialize_descriptor_parse)

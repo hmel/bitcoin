@@ -11,7 +11,7 @@
 #include <vector>
 
 
-static void Bech32Encode(benchmark::Bench& bench)
+static void Bech32Encode(benchmark::Bench& bench, const ArgsManager& args)
 {
     std::vector<uint8_t> v = ParseHex("c97f5a67ec381b760aeaf67573bc164845ff39a3bb26a1cee401ac67243b48db");
     std::vector<unsigned char> tmp = {0};
@@ -23,7 +23,7 @@ static void Bech32Encode(benchmark::Bench& bench)
 }
 
 
-static void Bech32Decode(benchmark::Bench& bench)
+static void Bech32Decode(benchmark::Bench& bench, const ArgsManager& args)
 {
     std::string addr = "bc1qkallence7tjawwvy0dwt4twc62qjgaw8f4vlhyd006d99f09";
     bench.batch(addr.size()).unit("byte").run([&] {

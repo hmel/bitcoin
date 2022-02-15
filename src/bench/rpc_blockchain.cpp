@@ -37,7 +37,7 @@ struct TestBlockAndIndex {
 
 } // namespace
 
-static void BlockToJsonVerbose(benchmark::Bench& bench)
+static void BlockToJsonVerbose(benchmark::Bench& bench, const ArgsManager& args)
 {
     TestBlockAndIndex data;
     bench.run([&] {
@@ -48,7 +48,7 @@ static void BlockToJsonVerbose(benchmark::Bench& bench)
 
 BENCHMARK(BlockToJsonVerbose);
 
-static void BlockToJsonVerboseWrite(benchmark::Bench& bench)
+static void BlockToJsonVerboseWrite(benchmark::Bench& bench, const ArgsManager& args)
 {
     TestBlockAndIndex data;
     //auto univalue = blockToJSON(data.block, &data.blockindex, &data.blockindex, TxVerbosity::SHOW_DETAILS_AND_PREVOUT);

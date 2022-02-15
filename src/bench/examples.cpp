@@ -9,7 +9,7 @@
 
 volatile double sum = 0.0; // volatile, global so not optimized away
 
-static void Trig(benchmark::Bench& bench)
+static void Trig(benchmark::Bench& bench, const ArgsManager& args)
 {
     double d = 0.01;
     bench.run([&] {

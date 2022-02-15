@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <chainparamsbase.h>
 #include <key.h>
@@ -27,9 +28,10 @@
 
 void initialize_key()
 {
+    ArgsManager args;
     static const ECCVerifyHandle ecc_verify_handle;
     ECC_Start();
-    SelectParams(CBaseChainParams::REGTEST);
+    SelectParams(CBaseChainParams::REGTEST, args);
 }
 
 FUZZ_TARGET_INIT(key, initialize_key)

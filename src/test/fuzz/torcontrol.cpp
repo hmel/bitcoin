@@ -43,7 +43,8 @@ FUZZ_TARGET_INIT(torcontrol, initialize_torcontrol)
 {
     FuzzedDataProvider fuzzed_data_provider{buffer.data(), buffer.size()};
 
-    TorController tor_controller;
+    ArgsManager args;
+    TorController tor_controller(args);
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 10000) {
         TorControlReply tor_control_reply;
         CallOneOf(

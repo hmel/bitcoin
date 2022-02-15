@@ -5,6 +5,7 @@
 #ifndef BITCOIN_TEST_FUZZ_UTIL_H
 #define BITCOIN_TEST_FUZZ_UTIL_H
 
+#include "util/system.h"
 #include <arith_uint256.h>
 #include <attributes.h>
 #include <chainparamsbase.h>
@@ -298,6 +299,7 @@ auto ConsumeNode(FuzzedDataProvider& fuzzed_data_provider, const std::optional<N
     const std::string addr_name = fuzzed_data_provider.ConsumeRandomLengthString(64);
     const ConnectionType conn_type = fuzzed_data_provider.PickValueInArray(ALL_CONNECTION_TYPES);
     const bool inbound_onion{conn_type == ConnectionType::INBOUND ? fuzzed_data_provider.ConsumeBool() : false};
+    ArgsManager args;
     if constexpr (ReturnUniquePtr) {
         return std::make_unique<CNode>(node_id,
                                        local_services,
@@ -308,7 +310,8 @@ auto ConsumeNode(FuzzedDataProvider& fuzzed_data_provider, const std::optional<N
                                        addr_bind,
                                        addr_name,
                                        conn_type,
-                                       inbound_onion);
+                                       inbound_onion,
+                                       args);
     } else {
         return CNode{node_id,
                      local_services,
@@ -319,7 +322,8 @@ auto ConsumeNode(FuzzedDataProvider& fuzzed_data_provider, const std::optional<N
                      addr_bind,
                      addr_name,
                      conn_type,
-                     inbound_onion};
+                     inbound_onion,
+                     args};
     }
 }
 inline std::unique_ptr<CNode> ConsumeNodeAsUniquePtr(FuzzedDataProvider& fdp, const std::optional<NodeId>& node_id_in = std::nullopt) { return ConsumeNode<true>(fdp, node_id_in); }

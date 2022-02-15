@@ -16,7 +16,7 @@
 // characteristics than e.g. reindex timings. But that's not a requirement of
 // every benchmark."
 // (https://github.com/bitcoin/bitcoin/issues/7883#issuecomment-224807484)
-static void CCoinsCaching(benchmark::Bench& bench)
+static void CCoinsCaching(benchmark::Bench& bench, const ArgsManager& args)
 {
     const ECCVerifyHandle verify_handle;
     ECC_Start();

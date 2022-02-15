@@ -21,17 +21,17 @@ static void POLY1305(benchmark::Bench& bench, size_t buffersize)
     });
 }
 
-static void POLY1305_64BYTES(benchmark::Bench& bench)
+static void POLY1305_64BYTES(benchmark::Bench& bench, const ArgsManager& args)
 {
     POLY1305(bench, BUFFER_SIZE_TINY);
 }
 
-static void POLY1305_256BYTES(benchmark::Bench& bench)
+static void POLY1305_256BYTES(benchmark::Bench& bench, const ArgsManager& args)
 {
     POLY1305(bench, BUFFER_SIZE_SMALL);
 }
 
-static void POLY1305_1MB(benchmark::Bench& bench)
+static void POLY1305_1MB(benchmark::Bench& bench, const ArgsManager& args)
 {
     POLY1305(bench, BUFFER_SIZE_LARGE);
 }

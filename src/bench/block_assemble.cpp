@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <bench/bench.h>
 #include <consensus/validation.h>
 #include <crypto/sha256.h>
@@ -15,7 +16,7 @@
 
 #include <vector>
 
-static void AssembleBlock(benchmark::Bench& bench)
+static void AssembleBlock(benchmark::Bench& bench, const ArgsManager& args)
 {
     const auto test_setup = MakeNoLogFileContext<const TestingSetup>();
 

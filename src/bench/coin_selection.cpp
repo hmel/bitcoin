@@ -41,11 +41,11 @@ static void addCoin(const CAmount& nValue, const CWallet& wallet, std::vector<st
 // same one over and over isn't too useful. Generating random isn't useful
 // either for measurements."
 // (https://github.com/bitcoin/bitcoin/issues/7883#issuecomment-224807484)
-static void CoinSelection(benchmark::Bench& bench)
+static void CoinSelection(benchmark::Bench& bench, const ArgsManager& args)
 {
     NodeContext node;
     auto chain = interfaces::MakeChain(node);
-    CWallet wallet(chain.get(), "", gArgs, CreateDummyWalletDatabase());
+    CWallet wallet(chain.get(), "", args, CreateDummyWalletDatabase());
     std::vector<std::unique_ptr<CWalletTx>> wtxs;
     LOCK(wallet.cs_wallet);
 
@@ -99,7 +99,7 @@ static CAmount make_hard_case(int utxos, std::vector<OutputGroup>& utxo_pool)
     return target;
 }
 
-static void BnBExhaustion(benchmark::Bench& bench)
+static void BnBExhaustion(benchmark::Bench& bench, const ArgsManager& args)
 {
     // Setup
     std::vector<OutputGroup> utxo_pool;

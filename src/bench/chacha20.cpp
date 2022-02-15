@@ -24,17 +24,17 @@ static void CHACHA20(benchmark::Bench& bench, size_t buffersize)
     });
 }
 
-static void CHACHA20_64BYTES(benchmark::Bench& bench)
+static void CHACHA20_64BYTES(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20(bench, BUFFER_SIZE_TINY);
 }
 
-static void CHACHA20_256BYTES(benchmark::Bench& bench)
+static void CHACHA20_256BYTES(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20(bench, BUFFER_SIZE_SMALL);
 }
 
-static void CHACHA20_1MB(benchmark::Bench& bench)
+static void CHACHA20_1MB(benchmark::Bench& bench, const ArgsManager& args)
 {
     CHACHA20(bench, BUFFER_SIZE_LARGE);
 }

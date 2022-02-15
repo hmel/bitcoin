@@ -12,7 +12,7 @@
 #include <validation.h>
 
 
-static void DuplicateInputs(benchmark::Bench& bench)
+static void DuplicateInputs(benchmark::Bench& bench, const ArgsManager& args)
 {
     const auto testing_setup = MakeNoLogFileContext<const TestingSetup>();
 

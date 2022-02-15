@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <addrman.h>
 #include <bench/bench.h>
 #include <random.h>
@@ -72,7 +73,7 @@ static void FillAddrMan(AddrMan& addrman)
 
 /* Benchmarks */
 
-static void AddrManAdd(benchmark::Bench& bench)
+static void AddrManAdd(benchmark::Bench& bench, const ArgsManager& args)
 {
     CreateAddresses();
 
@@ -82,7 +83,7 @@ static void AddrManAdd(benchmark::Bench& bench)
     });
 }
 
-static void AddrManSelect(benchmark::Bench& bench)
+static void AddrManSelect(benchmark::Bench& bench, const ArgsManager& args)
 {
     AddrMan addrman{EMPTY_ASMAP, /*deterministic=*/false, ADDRMAN_CONSISTENCY_CHECK_RATIO};
 
@@ -94,7 +95,7 @@ static void AddrManSelect(benchmark::Bench& bench)
     });
 }
 
-static void AddrManGetAddr(benchmark::Bench& bench)
+static void AddrManGetAddr(benchmark::Bench& bench, const ArgsManager& args)
 {
     AddrMan addrman{EMPTY_ASMAP, /*deterministic=*/false, ADDRMAN_CONSISTENCY_CHECK_RATIO};
 
@@ -106,7 +107,7 @@ static void AddrManGetAddr(benchmark::Bench& bench)
     });
 }
 
-static void AddrManAddThenGood(benchmark::Bench& bench)
+static void AddrManAddThenGood(benchmark::Bench& bench, const ArgsManager& args)
 {
     auto markSomeAsGood = [](AddrMan& addrman) {
         for (size_t source_i = 0; source_i < NUM_SOURCES; ++source_i) {

@@ -132,6 +132,7 @@ int64_t atoi64_legacy(const std::string& str)
 
 FUZZ_TARGET(string)
 {
+    ArgsManager args;
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
     const std::string random_string_1 = fuzzed_data_provider.ConsumeRandomLengthString(32);
     const std::string random_string_2 = fuzzed_data_provider.ConsumeRandomLengthString(32);
@@ -153,7 +154,7 @@ FUZZ_TARGET(string)
     (void)HelpExampleRpc(random_string_1, random_string_2);
     (void)HelpMessageGroup(random_string_1);
     (void)HelpMessageOpt(random_string_1, random_string_2);
-    (void)IsDeprecatedRPCEnabled(random_string_1);
+    (void)IsDeprecatedRPCEnabled(random_string_1, args);
     (void)Join(random_string_vector, random_string_1);
     (void)JSONRPCError(fuzzed_data_provider.ConsumeIntegral<int>(), random_string_1);
     const util::Settings settings;

@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <policy/fees.h>
 #include <primitives/transaction.h>
 #include <test/fuzz/FuzzedDataProvider.h>
@@ -23,7 +24,7 @@ void initialize_policy_estimator()
 FUZZ_TARGET_INIT(policy_estimator, initialize_policy_estimator)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
-    CBlockPolicyEstimator block_policy_estimator;
+    CBlockPolicyEstimator block_policy_estimator(ArgsManager().GetDataDirNet());
     LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 10000) {
         CallOneOf(
             fuzzed_data_provider,

@@ -2,6 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "util/system.h"
 #include <chainparams.h>
 #include <core_io.h>
 #include <rpc/client.h>
@@ -13,8 +14,9 @@
 
 void initialize_parse_univalue()
 {
+    ArgsManager args;
     static const ECCVerifyHandle verify_handle;
-    SelectParams(CBaseChainParams::REGTEST);
+    SelectParams(CBaseChainParams::REGTEST, args);
 }
 
 FUZZ_TARGET_INIT(parse_univalue, initialize_parse_univalue)

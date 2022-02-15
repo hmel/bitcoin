@@ -79,7 +79,7 @@ static std::vector<CTransactionRef> CreateOrderedCoins(FastRandomContext& det_ra
     return ordered_coins;
 }
 
-static void ComplexMemPool(benchmark::Bench& bench)
+static void ComplexMemPool(benchmark::Bench& bench, const ArgsManager& args)
 {
     FastRandomContext det_rand{true};
     int childTxs = 800;
@@ -99,7 +99,7 @@ static void ComplexMemPool(benchmark::Bench& bench)
     });
 }
 
-static void MempoolCheck(benchmark::Bench& bench)
+static void MempoolCheck(benchmark::Bench& bench, const ArgsManager& args)
 {
     FastRandomContext det_rand{true};
     const int childTxs = bench.complexityN() > 1 ? static_cast<int>(bench.complexityN()) : 2000;

@@ -8,7 +8,7 @@
 #include <uint256.h>
 
 
-static void PrePadded(benchmark::Bench& bench)
+static void PrePadded(benchmark::Bench& bench, const ArgsManager& args)
 {
 
     CSHA256 hasher;
@@ -28,7 +28,7 @@ static void PrePadded(benchmark::Bench& bench)
 
 BENCHMARK(PrePadded);
 
-static void RegularPadded(benchmark::Bench& bench)
+static void RegularPadded(benchmark::Bench& bench, const ArgsManager& args)
 {
     CSHA256 hasher;
 

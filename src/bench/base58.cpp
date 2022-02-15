@@ -10,7 +10,7 @@
 #include <vector>
 
 
-static void Base58Encode(benchmark::Bench& bench)
+static void Base58Encode(benchmark::Bench& bench, const ArgsManager& args)
 {
     static const std::array<unsigned char, 32> buff = {
         {
@@ -25,7 +25,7 @@ static void Base58Encode(benchmark::Bench& bench)
 }
 
 
-static void Base58CheckEncode(benchmark::Bench& bench)
+static void Base58CheckEncode(benchmark::Bench& bench, const ArgsManager& args)
 {
     static const std::array<unsigned char, 32> buff = {
         {
@@ -40,7 +40,7 @@ static void Base58CheckEncode(benchmark::Bench& bench)
 }
 
 
-static void Base58Decode(benchmark::Bench& bench)
+static void Base58Decode(benchmark::Bench& bench, const ArgsManager& args)
 {
     const char* addr = "17VZNX1SN5NtKa8UQFxwQbFeFc3iqRYhem";
     std::vector<unsigned char> vch;

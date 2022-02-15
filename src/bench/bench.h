@@ -5,6 +5,7 @@
 #ifndef BITCOIN_BENCH_BENCH_H
 #define BITCOIN_BENCH_BENCH_H
 
+#include "util/system.h"
 #include <fs.h>
 #include <util/macros.h>
 
@@ -38,8 +39,9 @@ BENCHMARK(NameOfYourBenchmarkFunction);
 namespace benchmark {
 
 using ankerl::nanobench::Bench;
+class ArgsManager;
 
-typedef std::function<void(Bench&)> BenchFunction;
+typedef std::function<void(Bench&, const ::ArgsManager& args)> BenchFunction;
 
 struct Args {
     bool is_list_only;

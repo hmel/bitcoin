@@ -8,7 +8,7 @@
 #include <random.h>
 #include <uint256.h>
 
-static void MerkleRoot(benchmark::Bench& bench)
+static void MerkleRoot(benchmark::Bench& bench, const ArgsManager& args)
 {
     FastRandomContext rng(true);
     std::vector<uint256> leaves;
