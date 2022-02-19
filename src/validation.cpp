@@ -1540,6 +1540,7 @@ void CChainState::CheckForkWarningConditions()
 // Called both upon regular invalid block discovery *and* InvalidateBlock
 void CChainState::InvalidChainFound(CBlockIndex* pindexNew)
 {
+    AssertLockHeld(cs_main);
     if (!m_chainman.m_best_invalid || pindexNew->nChainWork > m_chainman.m_best_invalid->nChainWork) {
         m_chainman.m_best_invalid = pindexNew;
     }
@@ -1562,6 +1563,7 @@ void CChainState::InvalidChainFound(CBlockIndex* pindexNew)
 // which does its own setBlockIndexCandidates management.
 void CChainState::InvalidBlockFound(CBlockIndex* pindex, const BlockValidationState& state)
 {
+    AssertLockHeld(cs_main);
     if (state.GetResult() != BlockValidationResult::BLOCK_MUTATED) {
         pindex->nStatus |= BLOCK_FAILED_VALID;
         m_chainman.m_failed_blocks.insert(pindex);
@@ -1595,7 +1597,7 @@ bool CScriptCheck::operator()() {
 static CuckooCache::cache<uint256, SignatureCacheHasher> g_scriptExecutionCache;
 static CSHA256 g_scriptExecutionCacheHasher;
 
-void InitScriptExecutionCache() {
+void InitScriptExecutionCache(const ArgsManager& args) {
     // Setup the salted hasher
     uint256 nonce = GetRandHash();
     // We want the nonce to be 64 bytes long to force the hasher to process
@@ -1605,7 +1607,7 @@ void InitScriptExecutionCache() {
     g_scriptExecutionCacheHasher.Write(nonce.begin(), 32);
     // nMaxCacheSize is unsigned. If -maxsigcachesize is set to zero,
     // setup_bytes creates the minimum possible cache (2 elements).
-    size_t nMaxCacheSize = std::min(std::max((int64_t)0, gArgs.GetIntArg("-maxsigcachesize", DEFAULT_MAX_SIG_CACHE_SIZE) / 2), MAX_MAX_SIG_CACHE_SIZE) * ((size_t) 1 << 20);
+    size_t nMaxCacheSize = std::min(std::max((int64_t)0, args.GetIntArg("-maxsigcachesize", DEFAULT_MAX_SIG_CACHE_SIZE) / 2), MAX_MAX_SIG_CACHE_SIZE) * ((size_t) 1 << 20);
     size_t nElems = g_scriptExecutionCache.setup_bytes(nMaxCacheSize);
     LogPrintf("Using %zu MiB out of %zu/2 requested for script execution cache, able to store %zu elements\n",
             (nElems*sizeof(uint256)) >>20, (nMaxCacheSize*2)>>20, nElems);
@@ -1803,8 +1805,9 @@ DisconnectResult CChainState::DisconnectBlock(const CBlock& block, const CBlockI
                 error("DisconnectBlock(): transaction and undo data inconsistent");
                 return DISCONNECT_FAILED;
             }
-            for (unsigned int j = tx.vin.size(); j-- > 0;) {
-                const COutPoint &out = tx.vin[j].prevout;
+            for (unsigned int j = tx.vin.size(); j > 0;) {
+                --j;
+                const COutPoint& out = tx.vin[j].prevout;
                 int res = ApplyTxInUndo(std::move(txundo.vprevout[j]), view, out);
                 if (res == DISCONNECT_FAILED) return DISCONNECT_FAILED;
                 fClean = fClean && res != DISCONNECT_UNCLEAN;
@@ -2225,15 +2228,17 @@ bool CChainState::ConnectBlock(const CBlock& block, BlockValidationState& state,
 
 CoinsCacheSizeState CChainState::GetCoinsCacheSizeState()
 {
+    AssertLockHeld(::cs_main);
     return this->GetCoinsCacheSizeState(
         m_coinstip_cache_size_bytes,
-        gArgs.GetIntArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000);
+        m_blockman.args().GetIntArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000);
 }
 
 CoinsCacheSizeState CChainState::GetCoinsCacheSizeState(
     size_t max_coins_cache_size_bytes,
     size_t max_mempool_size_bytes)
 {
+    AssertLockHeld(::cs_main);
     const int64_t nMempoolUsage = m_mempool ? m_mempool->DynamicMemoryUsage() : 0;
     int64_t cacheSize = CoinsTip().DynamicMemoryUsage();
     int64_t nTotalSpace =
@@ -2322,7 +2327,7 @@ bool CChainState::FlushStateToDisk(
         // Write blocks and block index to disk.
         if (fDoFullFlush || fPeriodicWrite) {
             // Ensure we can write block index
-            if (!CheckDiskSpace(gArgs.GetBlocksDirPath())) {
+            if (!CheckDiskSpace(args().GetBlocksDirPath())) {
                 return AbortNode(state, "Disk space is too low!", _("Disk space is too low!"));
             }
             {
@@ -2358,7 +2363,7 @@ bool CChainState::FlushStateToDisk(
             // twice (once in the log, and once in the tables). This is already
             // an overestimation, as most will delete an existing entry or
             // overwrite one. Still, use a conservative safety factor of 2.
-            if (!CheckDiskSpace(gArgs.GetDataDirNet(), 48 * 2 * 2 * CoinsTip().GetCacheSize())) {
+            if (!CheckDiskSpace(args().GetDataDirNet(), 48 * 2 * 2 * CoinsTip().GetCacheSize())) {
                 return AbortNode(state, "Disk space is too low!", _("Disk space is too low!"));
             }
             // Flush the chainstate (which may refer to block index entries).
@@ -2402,12 +2407,12 @@ void CChainState::PruneAndFlush()
     }
 }
 
-static void DoWarning(const bilingual_str& warning)
+static void DoWarning(const bilingual_str& warning, const ArgsManager& args)
 {
     static bool fWarned = false;
     SetMiscWarning(warning);
     if (!fWarned) {
-        AlertNotify(warning.original);
+        AlertNotify(warning.original, args);
         fWarned = true;
     }
 }
@@ -2442,6 +2447,7 @@ static void UpdateTipLog(
 
 void CChainState::UpdateTip(const CBlockIndex* pindexNew)
 {
+    AssertLockHeld(::cs_main);
     const auto& coins_tip = this->CoinsTip();
 
     // The remainder of the function isn't relevant if we are not acting on
@@ -2475,7 +2481,7 @@ void CChainState::UpdateTip(const CBlockIndex* pindexNew)
             if (state == ThresholdState::ACTIVE || state == ThresholdState::LOCKED_IN) {
                 const bilingual_str warning = strprintf(_("Unknown new rules activated (versionbit %i)"), bit);
                 if (state == ThresholdState::ACTIVE) {
-                    DoWarning(warning);
+                    DoWarning(warning, args());
                 } else {
                     AppendWarning(warning_messages, warning);
                 }
@@ -2881,7 +2887,7 @@ bool CChainState::ActivateBestChain(BlockValidationState& state, std::shared_ptr
 
     CBlockIndex *pindexMostWork = nullptr;
     CBlockIndex *pindexNewTip = nullptr;
-    int nStopAtHeight = gArgs.GetIntArg("-stopatheight", DEFAULT_STOPATHEIGHT);
+    int nStopAtHeight = args().GetIntArg("-stopatheight", DEFAULT_STOPATHEIGHT);
     do {
         // Block until the validation queue drains. This should largely
         // never happen in normal operation, however may happen during
@@ -4500,8 +4506,8 @@ static const uint64_t MEMPOOL_DUMP_VERSION = 1;
 
 bool LoadMempool(CTxMemPool& pool, CChainState& active_chainstate, FopenFn mockable_fopen_function)
 {
-    int64_t nExpiryTimeout = gArgs.GetIntArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60;
-    FILE* filestr{mockable_fopen_function(gArgs.GetDataDirNet() / "mempool.dat", "rb")};
+    int64_t nExpiryTimeout = active_chainstate.args().GetIntArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY) * 60 * 60;
+    FILE* filestr{mockable_fopen_function(active_chainstate.args().GetDataDirNet() / "mempool.dat", "rb")};
     CAutoFile file(filestr, SER_DISK, CLIENT_VERSION);
     if (file.IsNull()) {
         LogPrintf("Failed to open mempool file from disk. Continuing anyway.\n");
@@ -4582,7 +4588,7 @@ bool LoadMempool(CTxMemPool& pool, CChainState& active_chainstate, FopenFn mocka
     return true;
 }
 
-bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool skip_file_commit)
+bool DumpMempool(const CTxMemPool& pool, const ArgsManager& args, FopenFn mockable_fopen_function, bool skip_file_commit)
 {
     int64_t start = GetTimeMicros();
 
@@ -4605,7 +4611,7 @@ bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool s
     int64_t mid = GetTimeMicros();
 
     try {
-        FILE* filestr{mockable_fopen_function(gArgs.GetDataDirNet() / "mempool.dat.new", "wb")};
+        FILE* filestr{mockable_fopen_function(args.GetDataDirNet() / "mempool.dat.new", "wb")};
         if (!filestr) {
             return false;
         }
@@ -4631,7 +4637,7 @@ bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function, bool s
         if (!skip_file_commit && !FileCommit(file.Get()))
             throw std::runtime_error("FileCommit failed");
         file.fclose();
-        if (!RenameOver(gArgs.GetDataDirNet() / "mempool.dat.new", gArgs.GetDataDirNet() / "mempool.dat")) {
+        if (!RenameOver(args.GetDataDirNet() / "mempool.dat.new", args.GetDataDirNet() / "mempool.dat")) {
             throw std::runtime_error("Rename failed");
         }
         int64_t last = GetTimeMicros();
