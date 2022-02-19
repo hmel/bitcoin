@@ -193,7 +193,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIn
                 // coinbase transaction (i.e. i == 0) doesn't have undo data
                 const CTxUndo* txundo = (have_undo && i > 0) ? &blockUndo.vtxundo.at(i - 1) : nullptr;
                 UniValue objTx(UniValue::VOBJ);
-                TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(args), txundo, verbosity);
+                TxToUniv(*tx, uint256(), objTx, true, RPCSerializationFlags(Params().args()), txundo, verbosity);
                 txs.push_back(objTx);
             }
             break;
@@ -1069,6 +1069,7 @@ static RPCHelpMan getblock()
     const CBlockIndex* tip;
     ChainstateManager& chainman = EnsureAnyChainman(request.context);
     {
+        ChainstateManager& chainman = EnsureAnyChainman(request.context);
         LOCK(cs_main);
         pblockindex = chainman.m_blockman.LookupBlockIndex(hash);
         tip = chainman.ActiveChain().Tip();
