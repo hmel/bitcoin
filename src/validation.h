@@ -866,6 +866,8 @@ public:
     //! chainstate to avoid duplicating block metadata.
     node::BlockManager m_blockman;
 
+    const ArgsManager& args() const { return m_args; }
+
     /**
      * In order to efficiently track invalidity of headers, we keep the set of
      * blocks which we tried to connect and found to be invalid here (ie which
@@ -1014,7 +1016,7 @@ public:
 using FopenFn = std::function<FILE*(const fs::path&, const char*)>;
 
 /** Dump the mempool to disk. */
-bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function = fsbridge::fopen, bool skip_file_commit = false);
+bool DumpMempool(const CTxMemPool& pool, const ArgsManager& args, FopenFn mockable_fopen_function = fsbridge::fopen, bool skip_file_commit = false);
 
 /** Load the mempool from disk. */
 bool LoadMempool(CTxMemPool& pool, CChainState& active_chainstate, FopenFn mockable_fopen_function = fsbridge::fopen);

@@ -870,7 +870,7 @@ void ThreadImport(ChainstateManager& chainman, std::vector<fs::path> vImportFile
             int nFile = 0;
             while (true) {
                 FlatFilePos pos(nFile, 0);
-                if (!fs::exists(GetBlockPosFilename(pos, chainman.args().GetDataDirNet(), chainman.args().GetBoolArg("-fastprune", false)))) {
+                if (!fs::exists(GetBlockPosFilename(pos, args.GetDataDirNet(), args.GetBoolArg("-fastprune", false)))) {
                     break; // No block files left to reindex
                 }
                 FILE* file = OpenBlockFile(pos, args, true);
