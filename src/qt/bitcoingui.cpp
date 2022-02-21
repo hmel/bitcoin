@@ -771,6 +771,7 @@ void BitcoinGUI::createTrayIconMenu()
 #ifndef Q_OS_MAC
     if (!trayIcon) return;
 #endif // Q_OS_MAC
+<<<<<<< HEAD
 
     // Configuration of the tray icon (or Dock icon) menu.
     QAction* show_hide_action{nullptr};
@@ -801,6 +802,31 @@ void BitcoinGUI::createTrayIconMenu()
     trayIconMenu->addSeparator();
     quit_action = trayIconMenu->addAction(quitAction->text(), quitAction, &QAction::trigger);
 
+=======
+
+    // Configuration of the tray icon (or Dock icon) menu.
+#ifndef Q_OS_MAC
+    // Note: On macOS, the Dock icon's menu already has Show / Hide action.
+    trayIconMenu->addAction(toggleHideAction);
+    trayIconMenu->addSeparator();
+#endif // Q_OS_MAC
+
+    if (enableWallet) {
+        trayIconMenu->addAction(sendCoinsMenuAction);
+        trayIconMenu->addAction(receiveCoinsMenuAction);
+        trayIconMenu->addSeparator();
+        trayIconMenu->addAction(signMessageAction);
+        trayIconMenu->addAction(verifyMessageAction);
+        trayIconMenu->addSeparator();
+    }
+    trayIconMenu->addAction(optionsAction);
+    trayIconMenu->addAction(openRPCConsoleAction);
+#ifndef Q_OS_MAC
+    // Note: On macOS, the Dock icon's menu already has Quit action.
+    trayIconMenu->addSeparator();
+    trayIconMenu->addAction(quitAction);
+
+>>>>>>> 52a27c271 (qt, refactor: Fill up trayIconMenu before connections)
     trayIcon->setContextMenu(trayIconMenu.get());
     connect(trayIcon, &QSystemTrayIcon::activated, [this](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
@@ -817,6 +843,7 @@ void BitcoinGUI::createTrayIconMenu()
     });
     trayIconMenu->setAsDockMenu();
 #endif // Q_OS_MAC
+<<<<<<< HEAD
 
     connect(
         // Using QSystemTrayIcon::Context is not reliable.
@@ -844,6 +871,8 @@ void BitcoinGUI::createTrayIconMenu()
                 if (quit_action) quit_action->setEnabled(true);
             }
         });
+=======
+>>>>>>> 52a27c271 (qt, refactor: Fill up trayIconMenu before connections)
 }
 
 void BitcoinGUI::optionsClicked()
